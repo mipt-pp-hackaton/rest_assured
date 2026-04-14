@@ -1,8 +1,8 @@
 from dynaconf import Dynaconf
 from pydantic import BaseModel
 
-from poetry_python_template.src.configs.app.app import APPConfig
-from poetry_python_template.src.configs.app.db import DBConfig
+from rest_assured.src.configs.app.app import APPConfig
+from rest_assured.src.configs.app.db import DBConfig
 
 
 class Settings(BaseModel):

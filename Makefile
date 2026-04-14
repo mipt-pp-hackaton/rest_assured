@@ -1,4 +1,4 @@
-ROOT_PATH = poetry_python_template/src
+ROOT_PATH = rest_assured/src
 format:
 	@echo "formating"
 	poetry run ruff format $(ROOT_PATH)
@@ -41,8 +41,8 @@ mrmigrate:
 
 itest:
 	@echo "run integrational tests"
-	pytest poetry_python_template/integrational_tests --junitxml=integration-test-results.xml
+	pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml
 
 utest:
 	@echo "run unit test"
-	pytest poetry_python_template/tests --junitxml=unit-test-results.xml
+	pytest rest_assured/tests --junitxml=unit-test-results.xml

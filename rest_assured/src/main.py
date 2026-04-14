@@ -1,8 +1,8 @@
 import uvicorn
 from fastapi import FastAPI
 
-from poetry_python_template.src.api.misc import misc_router
-from poetry_python_template.src.configs.app.main import settings
+from rest_assured.src.api.misc import misc_router
+from rest_assured.src.configs.app.main import settings
 
 api_base_prefix = "/api/"
 

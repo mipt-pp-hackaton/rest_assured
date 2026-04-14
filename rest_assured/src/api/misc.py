@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from poetry_python_template.src.schemas.misc_schema import HelthCheckSchema
+from rest_assured.src.schemas.misc_schema import HelthCheckSchema
 
 misc_router = APIRouter()
 

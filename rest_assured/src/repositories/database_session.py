@@ -3,7 +3,7 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from poetry_python_template.src.configs.app.main import settings
+from rest_assured.src.configs.app.main import settings
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

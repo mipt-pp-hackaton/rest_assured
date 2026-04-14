@@ -1,5 +1,5 @@
 [project]
-name = "poetry_python_template"
+name = "rest_assured"
 version = "0.1.0"
 description = ""
 authors = [
@@ -27,19 +27,41 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "ruff (>=0.14.9,<0.15.0)",
     "pytest (>=9.0.2,<10.0.0)",
-    "mypy (>=1.19.1,<2.0.0)"
+    "mypy (>=1.19.1,<2.0.0)",
+    "python-semantic-release (>=9.1.0,<10.0.0)"
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"poetry_python_template/integrational_tests/*" = ["E501"]
-"poetry_python_template/tests/*" = ["E501"]
-"poetry_python_template/src/models/__init__.py" = ["F401"]
+"rest_assured/integrational_tests/*" = ["E501"]
+"rest_assured/tests/*" = ["E501"]
+"rest_assured/src/models/__init__.py" = ["F401"]
 
 [tool.ruff]
 exclude = [
-    "poetry_python_template/src/alembic/"
+    "rest_assured/src/alembic/"
 ]
 line-length = 88
 [project.scripts]
-pa-server = "poetry_python_template.src.cli:main"
-pa-migrate = "poetry_python_template.src.cli:run_migrations"
+pa-server = "rest_assured.src.cli:main"
+pa-migrate = "rest_assured.src.cli:run_migrations"
+
+[tool.semantic_release]
+version_toml = [
+    "pyproject.toml:project.version",
+]
+branches = ["main"]
+upload_to_release = true
+build_command = "pip install poetry && poetry build"
+major_on_zero = false
+
+[tool.semantic_release.changelog]
+template_dir = "templates"
+changelog_file = "CHANGELOG.md"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "style", "test"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
