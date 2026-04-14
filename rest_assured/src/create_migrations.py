@@ -4,7 +4,7 @@ from alembic import command
 from alembic.config import Config
 from testcontainers.postgres import PostgresContainer
 
-from poetry_python_template.src.configs.app.main import settings
+from rest_assured.src.configs.app.main import settings
 
 
 def main():

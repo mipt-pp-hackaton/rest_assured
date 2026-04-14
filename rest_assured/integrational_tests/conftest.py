@@ -9,9 +9,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.testclient import TestClient
 from testcontainers.postgres import PostgresContainer
 
-from poetry_python_template.src.configs.app.main import settings
-from poetry_python_template.src.main import app
-from poetry_python_template.src.repositories.database_session import get_session
+from rest_assured.src.configs.app.main import settings
+from rest_assured.src.main import app
+from rest_assured.src.repositories.database_session import get_session
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -45,7 +45,7 @@ async def postgres_connection(_bootstrap_db) -> AsyncSession:
 
 
 def run_migrations(revision: str = "heads") -> None:
-    repo_root = os.path.dirname(os.path.dirname(__file__))  # .../poetry_python_template
+    repo_root = os.path.dirname(os.path.dirname(__file__))  # .../rest_assured
     alembic_ini_path = os.path.join(repo_root, "src", "alembic.ini")
     alembic_cfg = Config(alembic_ini_path)
     command.upgrade(config=alembic_cfg, revision=revision)

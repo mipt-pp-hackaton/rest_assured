@@ -1,5 +1,5 @@
 [project]
-name = "poetry_python_template"
+name = "rest_assured"
 version = "0.1.0"
 description = ""
 authors = [
@@ -31,15 +31,15 @@ dev = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"poetry_python_template/integrational_tests/*" = ["E501"]
-"poetry_python_template/tests/*" = ["E501"]
-"poetry_python_template/src/models/__init__.py" = ["F401"]
+"rest_assured/integrational_tests/*" = ["E501"]
+"rest_assured/tests/*" = ["E501"]
+"rest_assured/src/models/__init__.py" = ["F401"]
 
 [tool.ruff]
 exclude = [
-    "poetry_python_template/src/alembic/"
+    "rest_assured/src/alembic/"
 ]
 line-length = 88
 [project.scripts]
-pa-server = "poetry_python_template.src.cli:main"
-pa-migrate = "poetry_python_template.src.cli:run_migrations"
+pa-server = "rest_assured.src.cli:main"
+pa-migrate = "rest_assured.src.cli:run_migrations"

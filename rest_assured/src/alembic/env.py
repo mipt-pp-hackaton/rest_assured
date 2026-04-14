@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from sqlmodel import SQLModel
-from poetry_python_template.src.configs.app.main import settings
-from poetry_python_template.src.models import *
+from rest_assured.src.configs.app.main import settings
+from rest_assured.src.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
