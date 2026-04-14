@@ -49,14 +49,15 @@ pa-migrate = "rest_assured.src.cli:run_migrations"
 version_toml = [
     "pyproject.toml:project.version",
 ]
-branches = ["main"]
 upload_to_release = true
 build_command = "pip install poetry && poetry build"
 major_on_zero = false
 
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+
 [tool.semantic_release.changelog]
 template_dir = "templates"
-changelog_file = "CHANGELOG.md"
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
