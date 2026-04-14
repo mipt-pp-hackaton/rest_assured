@@ -1,12 +1,12 @@
 # Rest Assured — Система мониторинга доступности сервисов
 
-![Python](https://img.shields.io/badge/python-3.13-blue.svg?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![SQLModel](https://img.shields.io/badge/SQLModel-009688?style=for-the-badge&logo=pydantic&logoColor=white)
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
-![Poetry](https://img.shields.io/badge/Poetry-%233B82F6.svg?style=for-the-badge&logo=poetry&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+[![CI](https://img.shields.io/github/actions/workflow/status/mipt-pp-hackaton/rest_assured/ci.yml?branch=main&label=CI&logo=github&style=flat-square)](https://github.com/mipt-pp-hackaton/rest_assured/actions)
+[![Release Version](https://img.shields.io/github/v/release/mipt-pp-hackaton/rest_assured?label=release&logo=github&style=flat-square&color=blue)](https://github.com/mipt-pp-hackaton/rest_assured/releases)
+[![Python Version](https://img.shields.io/badge/python-3.13-blue.svg?logo=python&style=flat-square)](https://pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&style=flat-square)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white&style=flat-square)](https://www.postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white&style=flat-square)](https://www.docker.com)
+[![Poetry](https://img.shields.io/badge/Poetry-60A5FA?logo=poetry&logoColor=white&style=flat-square)](https://python-poetry.org)
 
 ---
 
