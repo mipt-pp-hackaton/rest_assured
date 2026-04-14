@@ -1,0 +1,1 @@
+This is template python project for base fastapi backend

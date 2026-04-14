@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create false
+          poetry --version
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-ansi
+
+      - name: Run unit tests
+        run: make utest
+
+      - name: Publish Unit Test Results
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: 'unit-test-results.xml'
+          check_name: 'Unit Test Results'
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U user -d test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pip install poetry toml-cli
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create false
+          poetry --version
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-ansi
+
+      - name: Configure settings.toml for integration tests
+        run: |
+          toml set --toml-path settings.toml app_use_testcontainers false
+          toml set --toml-path settings.toml db_host 127.0.0.1
+          toml set --toml-path settings.toml db_port 5432
+          toml set --toml-path settings.toml db_user user
+          toml set --toml-path settings.toml db_password password
+          toml set --toml-path settings.toml db_name test_db
+
+
+      - name: Run integration tests
+        run: make itest
+
+      - name: Publish Integration Test Results
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: 'integration-test-results.xml'
+          check_name: 'Integration Test Results'
+
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: [integration-tests, unit-tests]
+    if: ${{ github.ref == 'refs/heads/main' && success() }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare image name (lowercase)
+        id: prep
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.prep.outputs.image }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.prep.outputs.image }}:${{ github.run_number }}
+            ${{ steps.prep.outputs.image }}:latest
+            ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

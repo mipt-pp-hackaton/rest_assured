@@ -1,0 +1,45 @@
+[project]
+name = "poetry_python_template"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "AndreyQuantum",email = "zelentsov1254@gmail.com"}
+]
+readme = "README.md"
+requires-python = "<4.0,>=3.13"
+dependencies = [
+    "loguru (>=0.7.3,<0.8.0)",
+    "fastapi[standard] (>=0.124.4,<0.125.0)",
+    "dynaconf (>=3.2.12,<4.0.0)",
+    "sqlmodel (>=0.0.27,<0.0.28)",
+    "alembic (>=1.17.2,<2.0.0)",
+    "syncpg (>=1.1.3,<2.0.0)",
+    "testcontainers (>=4.13.3,<5.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.14.9,<0.15.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "mypy (>=1.19.1,<2.0.0)"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"poetry_python_template/integrational_tests/*" = ["E501"]
+"poetry_python_template/tests/*" = ["E501"]
+"poetry_python_template/src/models/__init__.py" = ["F401"]
+
+[tool.ruff]
+exclude = [
+    "poetry_python_template/src/alembic/"
+]
+line-length = 88
+[project.scripts]
+pa-server = "poetry_python_template.src.cli:main"
+pa-migrate = "poetry_python_template.src.cli:run_migrations"

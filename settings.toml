@@ -1,0 +1,11 @@
+[app_settings]
+host = "0.0.0.0"
+port = 8000
+use_testcontainers = "True"
+
+[db_settings]
+name = "test_db"
+user = "user"
+password = "password"
+host = "localhost"
+port = 5432

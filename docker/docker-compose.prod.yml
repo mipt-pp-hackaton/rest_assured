@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_test:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d test_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    image: ghcr.io/mfti-dev-it-prod-2025/personal-assistant:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;\n\nimport socket; socket.setdefaulttimeout(2);\n\ntry:\n    r=urllib.request.urlopen('http://localhost:8000/api/v1/misc/health', timeout=2)\n    sys.exit(0 if r.getcode()==200 else 1)\nexcept Exception:\n    sys.exit(1)\""]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata_test:

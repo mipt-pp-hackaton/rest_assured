@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e0c7c0c9-211d-46cc-b41a-1799933f9de1" name="Changes" comment="rm tests dir">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poetry_python_template/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/poetry_python_template/src/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poetry_python_template/src/repositories/database_session.py" beforeDir="false" afterPath="$PROJECT_DIR$/poetry_python_template/src/repositories/database_session.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="53" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;AndreyQuantum&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:AndreyQuantum/poetry_python_template.git&quot;,
+    &quot;accountId&quot;: &quot;d0f587cd-e1b3-4d16-ad7f-e75d62a7b244&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="36qWnZFO2tisWnMvey5d5w94YjM" />
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="false" id="Update" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="autoscrollFromSource" value="true" />
+    <option name="autoscrollToSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.misc.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;ai.playground.ignore.import.keys.banner.in.settings&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/andrey-zelentsov/PycharmProjects/poetry_python_template/.github/workflows&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/.github/workflows" />
+      <recent name="$PROJECT_DIR$/poetry_python_template/src" />
+      <recent name="$PROJECT_DIR$/poetry_python_template/src/configs" />
+      <recent name="$PROJECT_DIR$/poetry_python_template/src/repositories" />
+      <recent name="$PROJECT_DIR$/poetry_python_template/integrational_tests" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/poetry_python_template/src" />
+      <recent name="$PROJECT_DIR$/poetry_python_template/src/api" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e0c7c0c9-211d-46cc-b41a-1799933f9de1" name="Changes" comment="" />
+      <created>1765734750504</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1765734750504</updated>
+    </task>
+    <task id="LOCAL-00001" summary="init">
+      <option name="closed" value="true" />
+      <created>1765736358639</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736358639</updated>
+    </task>
+    <task id="LOCAL-00002" summary="add misc">
+      <option name="closed" value="true" />
+      <created>1765736366124</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736366124</updated>
+    </task>
+    <task id="LOCAL-00003" summary="add lint deps">
+      <option name="closed" value="true" />
+      <created>1765736513892</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736513892</updated>
+    </task>
+    <task id="LOCAL-00004" summary="fix python version in pipelines">
+      <option name="closed" value="true" />
+      <created>1765736617508</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736617508</updated>
+    </task>
+    <task id="LOCAL-00005" summary="add setup.cfg for flake8">
+      <option name="closed" value="true" />
+      <created>1765736697432</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736697432</updated>
+    </task>
+    <task id="LOCAL-00006" summary="flake8 -&gt; ruff">
+      <option name="closed" value="true" />
+      <created>1765736852778</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1765736852778</updated>
+    </task>
+    <task id="LOCAL-00007" summary="fix lint">
+      <option name="closed" value="true" />
+      <created>1765737079386</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1765737079386</updated>
+    </task>
+    <task id="LOCAL-00008" summary="rm make install">
+      <option name="closed" value="true" />
+      <created>1765737261409</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1765737261409</updated>
+    </task>
+    <task id="LOCAL-00009" summary="fix lint">
+      <option name="closed" value="true" />
+      <created>1765737565709</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1765737565709</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fix poetry project install">
+      <option name="closed" value="true" />
+      <created>1765737650922</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1765737650922</updated>
+    </task>
+    <task id="LOCAL-00011" summary="fix ci">
+      <option name="closed" value="true" />
+      <created>1765737847638</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1765737847638</updated>
+    </task>
+    <task id="LOCAL-00012" summary="add pytest to dev deps">
+      <option name="closed" value="true" />
+      <created>1765738269155</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1765738269155</updated>
+    </task>
+    <task id="LOCAL-00013" summary="add integration test setup with testcontainers and alembic">
+      <option name="closed" value="true" />
+      <created>1767464053603</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1767464053603</updated>
+    </task>
+    <task id="LOCAL-00014" summary="refactor: restructure config modules and simplify settings management">
+      <option name="closed" value="true" />
+      <created>1767464218156</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1767464218156</updated>
+    </task>
+    <task id="LOCAL-00015" summary="fix: normalize image name in CI workflow and update Docker image handling">
+      <option name="closed" value="true" />
+      <created>1767465331000</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1767465331000</updated>
+    </task>
+    <task id="LOCAL-00016" summary="add pytest-asyncio to dependencies and update group classifications in poetry.lock">
+      <option name="closed" value="true" />
+      <created>1767465427980</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1767465427980</updated>
+    </task>
+    <task id="LOCAL-00017" summary="refactor: update settings import path and remove unused config attribute">
+      <option name="closed" value="true" />
+      <created>1767465546985</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1767465546985</updated>
+    </task>
+    <task id="LOCAL-00018" summary="refactor: update settings import paths to reflect module restructuring">
+      <option name="closed" value="true" />
+      <created>1767465783204</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1767465783204</updated>
+    </task>
+    <task id="LOCAL-00019" summary="refactor: clean up workspace configuration and remove unused imports">
+      <option name="closed" value="true" />
+      <created>1767465888465</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1767465888465</updated>
+    </task>
+    <task id="LOCAL-00020" summary="update: upgrade Docker base image to python:3.13-slim">
+      <option name="closed" value="true" />
+      <created>1767466076198</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1767466076198</updated>
+    </task>
+    <task id="LOCAL-00021" summary="add test reporting to github">
+      <option name="closed" value="true" />
+      <created>1768202513288</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1768202513288</updated>
+    </task>
+    <task id="LOCAL-00022" summary="update deps">
+      <option name="closed" value="true" />
+      <created>1768202533696</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1768202533696</updated>
+    </task>
+    <task id="LOCAL-00023" summary="rm tests dir">
+      <option name="closed" value="true" />
+      <created>1768202762117</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1768202762117</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="init" />
+    <MESSAGE value="add misc" />
+    <MESSAGE value="add lint deps" />
+    <MESSAGE value="fix python version in pipelines" />
+    <MESSAGE value="add setup.cfg for flake8" />
+    <MESSAGE value="flake8 -&gt; ruff" />
+    <MESSAGE value="rm make install" />
+    <MESSAGE value="fix lint" />
+    <MESSAGE value="fix poetry project install" />
+    <MESSAGE value="fix ci" />
+    <MESSAGE value="add pytest to dev deps" />
+    <MESSAGE value="add integration test setup with testcontainers and alembic" />
+    <MESSAGE value="refactor: restructure config modules and simplify settings management" />
+    <MESSAGE value="fix: normalize image name in CI workflow and update Docker image handling" />
+    <MESSAGE value="add pytest-asyncio to dependencies and update group classifications in poetry.lock" />
+    <MESSAGE value="refactor: update settings import path and remove unused config attribute" />
+    <MESSAGE value="refactor: update settings import paths to reflect module restructuring" />
+    <MESSAGE value="refactor: clean up workspace configuration and remove unused imports" />
+    <MESSAGE value="update: upgrade Docker base image to python:3.13-slim" />
+    <MESSAGE value="add test reporting to github" />
+    <MESSAGE value="update deps" />
+    <MESSAGE value="rm tests dir" />
+    <option name="LAST_COMMIT_MESSAGE" value="rm tests dir" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/poetry_python_template/src/create_migrations.py</url>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
