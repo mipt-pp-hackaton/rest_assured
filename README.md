@@ -87,6 +87,76 @@ make dprod
 
 ---
 
+## 🧭 Процесс работы над задачами
+
+Все задачи отслеживаются в [GitHub Issues](https://github.com/mipt-pp-hackaton/rest_assured/issues). Эпики помечены лейблом `epic`, конкретные таски — `epic:1-catalog`, `epic:2-checks`, `epic:3-metrics`, `epic:4-notifications`, `epic:5-ui`.
+
+### Шаг 1. Выбрать тикет
+
+1. Открой [список открытых issues](https://github.com/mipt-pp-hackaton/rest_assured/issues).
+2. Найди свободный тикет (без `assignees`) в нужном эпике.
+3. Назначь себя через **Assignees → assign yourself** в правой панели.
+4. Внимательно прочитай разделы **Зависит от**, **Что сделать**, **Тесты**, **DoD** — это полный контракт задачи.
+
+### Шаг 2. Создать ветку
+
+Имя ветки: `T<номер_эпика>.<номер_таски>-<краткое-описание-кебаб-кейсом>`. Базовая ветка — `main`.
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b T1.1-fix-cli-imports
+```
+
+### Шаг 3. Решить задачу
+
+1. Реализуй все пункты из раздела **Что сделать** в тикете.
+2. Напиши тесты, перечисленные в разделе **Тесты**.
+3. Прогони локально:
+   ```bash
+   make lint && make type && make utest && make itest
+   ```
+4. Коммить маленькими атомарными коммитами в формате [Conventional Commits](https://www.conventionalcommits.org) — это нужно для Semantic Release (см. ниже):
+   ```bash
+   git commit -m "feat(auth): add JWT login endpoint"
+   git commit -m "fix(cli): correct package import path"
+   ```
+
+### Шаг 4. Создать Pull Request
+
+1. Запушь ветку:
+   ```bash
+   git push -u origin T1.1-fix-cli-imports
+   ```
+2. Открой PR в GitHub: **Compare & pull request**.
+3. Заполни:
+   - **Title**: `T1.1 — Фикс импорта в src/cli.py` (тот же, что у тикета).
+   - **Description**: добавь строку `Closes #27` (номер своего тикета — это автоматически закроет issue после мерджа).
+   - Кратко опиши, что сделано и какие тесты проходят.
+4. **Reviewers → AndreyQuantum** (правая панель PR).
+5. **Labels**: проставь тот же label эпика, что и у тикета (например `epic:1-catalog`).
+
+### Шаг 5. Дождаться ревью
+
+- CI должен быть зелёным (lint + tests + типы).
+- Если ревьюер оставил комментарии — фикси, пушь в ту же ветку, отвечай на комменты с **Resolve conversation**.
+- После аппрува ревьюер мерджит PR в `main` (squash merge).
+
+### Полезные команды
+
+```bash
+# посмотреть свои тикеты
+gh issue list --assignee "@me"
+
+# создать PR прямо из CLI
+gh pr create --reviewer AndreyQuantum --label epic:1-catalog --body "Closes #27"
+
+# проверить статус CI у текущей ветки
+gh pr checks
+```
+
+---
+
 ## 🔄 Процесс релиза
 
 Мы используем **Semantic Release** для автоматизации:
