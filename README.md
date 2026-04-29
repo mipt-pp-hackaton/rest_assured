@@ -116,11 +116,7 @@ git checkout -b T1.1-fix-cli-imports
    ```bash
    make lint && make type && make utest && make itest
    ```
-4. Коммить маленькими атомарными коммитами в формате [Conventional Commits](https://www.conventionalcommits.org) — это нужно для Semantic Release (см. ниже):
-   ```bash
-   git commit -m "feat(auth): add JWT login endpoint"
-   git commit -m "fix(cli): correct package import path"
-   ```
+4. Коммить маленькими атомарными коммитами в формате [Conventional Commits](https://www.conventionalcommits.org/ru/v1.0.0/) — подробнее в разделе ниже [«Conventional Commits»](#-conventional-commits--формат-сообщений).
 
 ### Шаг 4. Создать Pull Request
 
@@ -154,6 +150,92 @@ gh pr create --reviewer AndreyQuantum --label epic:1-catalog --body "Closes #27"
 # проверить статус CI у текущей ветки
 gh pr checks
 ```
+
+---
+
+## ✍️ Conventional Commits — формат сообщений
+
+Каждый коммит следует [Conventional Commits 1.0.0](https://www.conventionalcommits.org/ru/v1.0.0/). Это критично — Semantic Release читает историю и автоматически рассчитывает следующую версию (см. [Процесс релиза](#-процесс-релиза)).
+
+### Формат
+
+```
+<type>(<scope>): <subject>
+
+[body]
+
+[footer]
+```
+
+- **type** — категория изменения (см. таблицу ниже).
+- **scope** *(опц., но желательно)* — короткое имя модуля/компонента: `auth`, `scheduler`, `metrics`, `incidents`, `ui`, `api`, `db`, `cli`, `docker`.
+- **subject** — императив, нижний регистр, без точки в конце, ≤ 72 символов.
+- **body** *(опц.)* — что и зачем; **не пересказывай diff**, объясняй мотивацию.
+- **footer** *(опц.)* — `Closes #N`, `Refs #N`, `BREAKING CHANGE: ...`.
+
+### Типы
+
+| Тип        | Когда использовать                                                       | Влияние на версию          |
+|------------|--------------------------------------------------------------------------|----------------------------|
+| `feat`     | Новая функциональность (видна пользователю / в API)                      | minor (`0.1.0` → `0.2.0`)  |
+| `fix`      | Исправление бага                                                          | patch (`0.1.0` → `0.1.1`)  |
+| `perf`     | Улучшение производительности без смены поведения                          | patch                      |
+| `refactor` | Рефакторинг без новой функциональности и без багфикса                     | —                          |
+| `docs`     | Только документация (README, ARCHITECTURE, docstrings)                   | —                          |
+| `test`     | Добавление или правка тестов                                              | —                          |
+| `style`    | Форматирование, отступы — без изменения логики                            | —                          |
+| `build`    | Сборка, зависимости (poetry, pip, docker)                                | —                          |
+| `ci`       | Изменения в GitHub Actions / pipeline                                    | —                          |
+| `chore`    | Прочие технические правки, не попадающие в остальные                     | —                          |
+
+### Примеры
+
+```
+feat(auth): add JWT login endpoint with bcrypt password hashing
+fix(cli): correct package import path from personal_assistant to rest_assured
+refactor(scheduler): extract callback registry into separate class
+docs(readme): add contributor workflow guide
+test(metrics): cover compute_sla edge cases (empty list, single item)
+chore(deps): bump httpx from 0.27 to 0.28
+perf(api): use DISTINCT ON instead of N+1 in /summary endpoint
+```
+
+### Breaking change
+
+Триггерит major bump (`1.2.3` → `2.0.0`). Два эквивалентных способа:
+
+```
+feat(api)!: rename POST /api/services to POST /api/services/register
+```
+
+или с блоком в footer:
+
+```
+feat(api): rename POST /api/services to POST /api/services/register
+
+BREAKING CHANGE: клиенты должны переключиться на новый URL.
+```
+
+### Связь с тикетом
+
+- Финальный коммит (или PR description) → `Closes #N` — закрывает issue при мердже.
+- Промежуточный коммит, частично относящийся к задаче → `Refs #N` в footer'е.
+
+```
+feat(metrics): add timeseries endpoint
+
+Реализует пункт T3.5: бакетирование check_results через date_trunc.
+
+Refs #48
+```
+
+### Чек перед коммитом
+
+- [ ] Тип выбран корректно (`feat` ≠ `fix`, не путай с `chore`).
+- [ ] Scope соответствует затронутому модулю.
+- [ ] Subject в императиве, без точки, ≤ 72 символов.
+- [ ] Если ломаешь обратную совместимость — есть `!` или `BREAKING CHANGE:`.
+- [ ] Один коммит = одно логическое изменение (не сваливай feat + refactor + docs в один).
 
 ---
 
