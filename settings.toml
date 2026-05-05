@@ -6,6 +6,8 @@ use_testcontainers = "True"
 [db_settings]
 name = "test_db"
 user = "user"
-password = "password"
+password = "1234"
 host = "localhost"
 port = 5432
+[scheduler]
+refresh_interval = 30
