@@ -1,38 +1,25 @@
-import httpx
+"""Классификация HTTP-ответов."""
 
 
-def evaluate_response(response: httpx.Response | None, error: Exception | None = None) -> dict:
+def evaluate_response(
+        status_code: int | None = None,
+        error_message: str | None = None,
+) -> bool:
     """
-    Классифицирует HTTP-ответ и возвращает словарь с результатом проверки.
+    Определяет доступность сервиса по HTTP-ответу.
 
-    Args:
-        response: ответ от httpx (может быть None при ошибке соединения)
-        error: исключение, если запрос не удался
+    Сервис НЕ доступен если:
+    - status_code >= 500 (ошибка сервера)
+    - status_code is None (таймаут/сетевая ошибка)
+    - error_message не пустой
 
-    Returns:
-        dict с ключами: is_up, status_code, response_time_ms, error_message
+    Сервис доступен если:
+    - 200 <= status_code < 500
     """
-    if error is not None:
-        return {
-            "is_up": False,
-            "status_code": None,
-            "response_time_ms": None,
-            "error_message": str(error),
-        }
-
-    if response is None:
-        return {
-            "is_up": False,
-            "status_code": None,
-            "response_time_ms": None,
-            "error_message": "No response received",
-        }
-
-    is_up = response.status_code < 500
-
-    return {
-        "is_up": is_up,
-        "status_code": response.status_code,
-        "response_time_ms": int(response.elapsed.total_seconds() * 1000),
-        "error_message": None if is_up else f"Server error: {response.status_code}",
-    }
+    if error_message:
+        return False
+    if status_code is None:
+        return False
+    if status_code >= 500:
+        return False
+    return 200 <= status_code < 500

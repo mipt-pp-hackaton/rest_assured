@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: user
@@ -25,14 +25,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;\n\nimport socket; socket.setdefaulttimeout(2);\n\ntry:\n    r=urllib.request.urlopen('http://localhost:8000/api/v1/misc/health', timeout=2)\n    sys.exit(0 if r.getcode()==200 else 1)\nexcept Exception:\n    sys.exit(1)\""]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
     ports:
       - "8000:8000"
+
+  test-service:
+    build:
+      context: ../test-service
+      dockerfile: Dockerfile
+    image: test-service:latest
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
 
 volumes:
   pgdata_test:

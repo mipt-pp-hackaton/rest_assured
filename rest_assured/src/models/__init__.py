@@ -1,4 +1,5 @@
-from rest_assured.src.models.checks import CheckResult
-from rest_assured.src.models.services import Service
+"""Модели данных."""
+from .checks import CheckResult
+from .services import Service
 
-__all__ = ["CheckResult", "Service"]
+__all__ = ["Service", "CheckResult"]

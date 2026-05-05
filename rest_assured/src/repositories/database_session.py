@@ -5,14 +5,32 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rest_assured.src.configs.app.main import settings
 
+_engine = None
+_sessionmaker = None
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    engine = create_async_engine(url=settings.db.dsl, echo=True, future=True)
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-    try:
-        async with async_session() as session:
-            yield session
-    finally:
-        await engine.dispose()
+
+def _get_engine():
+    global _engine
+    if _engine is None:
+        _engine = create_async_engine(
+            url=settings.db_settings.dsl,
+            echo=False,
+            future=True,
+        )
+    return _engine
+
+
+def _get_sessionmaker():
+    global _sessionmaker
+    if _sessionmaker is None:
+        _sessionmaker = async_sessionmaker(
+            _get_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+    return _sessionmaker
+
+
+def get_session() -> AsyncSession:
+    """Возвращает новую асинхронную сессию (не генератор)."""
+    return _get_sessionmaker()()

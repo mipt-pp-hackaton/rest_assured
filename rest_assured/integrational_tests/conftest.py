@@ -18,14 +18,14 @@ from rest_assured.src.repositories.database_session import get_session
 def _bootstrap_db() -> Generator[None, Any, None]:
     postgres = None
     try:
-        if settings.app.use_testcontainers:
+        if settings.app_settings.use_testcontainers:
             postgres = PostgresContainer("postgres:18-alpine")
             postgres.start()
-            settings.db.name = postgres.dbname
-            settings.db.port = int(postgres.get_exposed_port(5432))
-            settings.db.user = postgres.username
-            settings.db.password = postgres.password
-            settings.db.host = postgres.get_container_host_ip()
+            settings.db_settings.name = postgres.dbname
+            settings.db_settings.port = int(postgres.get_exposed_port(5432))
+            settings.db_settings.user = postgres.username
+            settings.db_settings.password = postgres.password
+            settings.db_settings.host = postgres.get_container_host_ip()
 
         run_migrations()
         yield
@@ -60,4 +60,3 @@ def router_api():
 @pytest_asyncio.fixture
 async def router_api_admin(postgres_connection):
     client = TestClient(app)
-    yield client

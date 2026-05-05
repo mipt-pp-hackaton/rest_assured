@@ -6,8 +6,12 @@ use_testcontainers = "True"
 [db_settings]
 name = "test_db"
 user = "user"
-password = "1234"
-host = "localhost"
+password = "password"
+host = "postgres"
 port = 5432
+
 [scheduler]
-refresh_interval = 30
+default_interval_ms = 60000
+http_timeout_seconds = 5.0
+max_retries = 2
+retry_delay_ms = 1000
