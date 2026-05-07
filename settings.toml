@@ -11,7 +11,5 @@ host = "postgres"
 port = 5432
 
 [scheduler]
-default_interval_ms = 60000
-http_timeout_seconds = 5.0
-max_retries = 2
-retry_delay_ms = 1000
+poll_interval_seconds = 5
+default_timeout_ms = 5000

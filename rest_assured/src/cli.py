@@ -8,12 +8,12 @@ from alembic.config import Config
 
 
 async def start_server():
-    from personal_assistant.src.configs.app import settings
+    from rest_assured.src.configs.app.main import settings
 
     config = uvicorn.Config(
-        "personal_assistant.src.main:app",
-        host=settings.app.app_host,
-        port=settings.app.app_port,
+        "rest_assured.src.main:app",
+        host=settings.app_settings.host,
+        port=settings.app_settings.port,
         log_level="info",
     )
     server = uvicorn.Server(config)

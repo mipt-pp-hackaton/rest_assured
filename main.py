@@ -1,16 +1,37 @@
-# This is a sample Python script.
+"""Точка входа FastAPI приложения."""
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from rest_assured.src.api.misc import misc_router
+from rest_assured.src.scheduler.listener import ServiceChangeListener
+from rest_assured.src.scheduler.runner import scheduler_runner
+
+listener = ServiceChangeListener()
+listener.set_runner(scheduler_runner)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Жизненный цикл приложения."""
+    await scheduler_runner.start()
+    await listener.start()
+    yield
+    await listener.stop()
+    await scheduler_runner.stop()
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+app = FastAPI(
+    title="Rest Assured",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+app.include_router(misc_router)
+
+
+@app.get("/api/health/scheduler")
+async def health_scheduler():
+    """Эндпоинт здоровья планировщика (T2.10)."""
+    return scheduler_runner.stats

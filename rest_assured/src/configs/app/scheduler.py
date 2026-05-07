@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class SchedulerSettings(BaseModel):
-    default_interval_ms: int = 60000
-    http_timeout_seconds: float = 5.0
-    max_retries: int = 2
-    retry_delay_ms: int = 1000
+    """Конфигурация планировщика в соответствии с T2.1."""
+
+    poll_interval_seconds: int = 5
+    default_timeout_ms: int = 5000

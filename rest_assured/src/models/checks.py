@@ -1,26 +1,30 @@
-"""Модель результата проверки сервиса."""
+"""Модель результата проверки сервиса (T2.3)."""
 
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from datetime import datetime
 
+from sqlalchemy import Index, desc
 from sqlmodel import Field, SQLModel
 
 
 class CheckResult(SQLModel, table=True):
     """Результат одной проверки доступности сервиса."""
-    __tablename__ = "check_results"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    service_id: UUID = Field(foreign_key="services.id", index=True)
+    __tablename__ = "check_results"
+    __table_args__ = (
+        Index(
+            "ix_check_results_service_checked_desc",
+            "service_id",
+            desc("checked_at"),
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    service_id: int = Field(foreign_key="services.id", index=True)
     checked_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=datetime.utcnow,
         index=True,
     )
     is_up: bool = Field(description="Статус доступности сервиса")
-    response_time_ms: float | None = Field(default=None)
-    status_code: int | None = Field(default=None)
-    error_message: str | None = Field(default=None)
-
-    model_config = {
-        "indexes": [("service_id", "checked_at desc")],
-    }
+    http_status: int | None = Field(default=None)
+    latency_ms: int | None = Field(default=None)
+    error: str | None = Field(default=None, max_length=500)

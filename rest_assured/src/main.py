@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from rest_assured.src.api.misc import misc_router
-from rest_assured.src.repositories.database_session import get_session
 from rest_assured.src.scheduler.runner import scheduler_runner
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 
@@ -16,7 +15,7 @@ listener.set_runner(scheduler_runner)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Жизненный цикл приложения."""
-    await scheduler_runner.start(get_session)
+    await scheduler_runner.start()
     await listener.start()
     yield
     await listener.stop()
@@ -34,5 +33,5 @@ app.include_router(misc_router)
 
 @app.get("/api/health/scheduler")
 async def health_scheduler():
-    """Эндпоинт здоровья планировщика."""
+    """Эндпоинт здоровья планировщика (T2.10)."""
     return scheduler_runner.stats

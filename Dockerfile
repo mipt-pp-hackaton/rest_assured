@@ -24,4 +24,4 @@ COPY rest_assured/ rest_assured/
 COPY settings.toml .
 COPY main.py .
 
-CMD sh -c "python -m alembic -c rest_assured/src/alembic.ini upgrade head && uvicorn rest_assured.src.main:app --host 0.0.0.0 --port 8000"
+CMD sh -c "python -m alembic -c rest_assured/src/alembic.ini upgrade heads && uvicorn rest_assured.src.main:app --host 0.0.0.0 --port 8000"

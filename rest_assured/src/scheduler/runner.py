@@ -1,224 +1,147 @@
-"""Планировщик проверок сервисов."""
+"""Планировщик проверок сервисов (T2.4)."""
 
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
 
 import httpx
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
-from rest_assured.src.scheduler.evaluator import evaluate_response
+from rest_assured.src.repositories.database_session import get_session
 
 logger = logging.getLogger(__name__)
 
+CheckCallback = Callable[[CheckResult], Awaitable[None]]
+
 
 class SchedulerRunner:
-    """Менеджер асинхронных воркеров для проверки сервисов."""
+    """Корневой объект планировщика (T2.4)."""
 
     def __init__(self) -> None:
-        self._workers: dict[str, asyncio.Task[None]] = {}
-        self._callbacks: list[Callable[[CheckResult], Awaitable[None]]] = []
-        self._http_client: httpx.AsyncClient | None = None
-        self._running = False
-        self._checks_total = 0
-        self._checks_failed = 0
-        self._session_factory: Callable[[], AsyncSession] | None = None
+        self._tasks: dict[int, asyncio.Task[None]] = {}
+        self._callbacks: list[CheckCallback] = []
+        self._client: httpx.AsyncClient | None = None
+        self.checks_total = 0
+        self.checks_failed = 0
+        self.last_loop_at: datetime | None = None
 
-    @property
-    def active_workers_count(self) -> int:
-        """Количество активных воркеров."""
-        return len([w for w in self._workers.values() if not w.done()])
-
-    @property
-    def stats(self) -> dict:
-        """Статистика планировщика."""
-        return {
-            "checks_total": self._checks_total,
-            "checks_failed": self._checks_failed,
-            "active_workers_count": self.active_workers_count,
-        }
-
-    def register_callback(
-        self, fn: Callable[[CheckResult], Awaitable[None]]
-    ) -> None:
-        """Регистрирует callback для обработки результатов проверок."""
+    def register_callback(self, fn: CheckCallback) -> None:
+        """Эпик 4 регистрирует здесь handle_check_result."""
         self._callbacks.append(fn)
         logger.info("Registered callback: %s", fn.__name__)
 
-    async def start(
-        self,
-        session_factory: Callable[[], AsyncSession],
-    ) -> None:
-        """Запускает раннер и HTTP-клиент, загружает сервисы из БД."""
-        self._session_factory = session_factory
-        self._http_client = httpx.AsyncClient(
-            timeout=settings.scheduler.http_timeout_seconds,
+    @property
+    def active_workers_count(self) -> int:
+        return len(self._tasks)
+
+    @property
+    def stats(self) -> dict:
+        """Статистика для GET /api/health/scheduler."""
+        return {
+            "checks_total": self.checks_total,
+            "checks_failed": self.checks_failed,
+            "active_workers_count": self.active_workers_count,
+        }
+
+    async def start(self) -> None:
+        """Поднять воркеры на все is_active=True сервисы (вызывается из lifespan.startup)."""
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(settings.scheduler.default_timeout_ms / 1000),
         )
-        self._running = True
-        await self._load_services()
-        logger.info("SchedulerRunner started")
-
-    async def stop(self) -> None:
-        """Останавливает все воркеры и закрывает HTTP-клиент."""
-        self._running = False
-
-        for task in self._workers.values():
-            task.cancel()
-
-        if self._workers:
-            await asyncio.gather(*self._workers.values(), return_exceptions=True)
-        self._workers.clear()
-
-        if self._http_client:
-            await self._http_client.aclose()
-            self._http_client = None
-
-        logger.info("SchedulerRunner stopped")
-
-    async def _load_services(self) -> None:
-        """Загружает активные сервисы из БД."""
-        assert self._session_factory is not None
-        session = self._session_factory()
+        session = get_session()
         try:
-            result = await session.execute(
-                select(Service).where(Service.is_active == True)  # noqa: E712
-            )
-            services = result.scalars().all()
-
-            for service in services:
-                self.add_service(
-                    service_id=str(service.id),
-                    url=service.url,
-                    interval_ms=service.interval_ms,
+            services = (
+                await session.exec(
+                    select(Service).where(Service.is_active == True)
                 )
+            ).all()
         finally:
             await session.close()
 
-    def add_service(self, service_id: str, url: str, interval_ms: int) -> None:
-        """Добавляет воркер для сервиса."""
-        if service_id in self._workers and not self._workers[service_id].done():
-            self.reschedule(service_id, interval_ms)
+        for s in services:
+            self._spawn(s)
+        logger.info("scheduler started: {} workers", len(self._tasks))
+
+    def _spawn(self, service: Service) -> None:
+        if service.id in self._tasks:
             return
+        # Отложенный импорт worker_loop (T2.5)
+        from rest_assured.src.scheduler.worker import worker_loop
 
         task = asyncio.create_task(
-            self._worker_loop(service_id, url, interval_ms)
+            worker_loop(self, service),
+            name=f"check_worker_{service.id}",
         )
-        self._workers[service_id] = task
+        self._tasks[service.id] = task
         logger.info(
-            "Added worker for service %s (interval=%dms)", service_id, interval_ms
+            "Spawned worker for service %s (id=%s)", service.name, service.id
         )
 
-    def remove_service(self, service_id: str) -> None:
-        """Удаляет воркер сервиса."""
-        if service_id in self._workers:
-            self._workers[service_id].cancel()
-            del self._workers[service_id]
-            logger.info("Removed worker for service %s", service_id)
-
-    def reschedule(self, service_id: str, new_interval_ms: int) -> None:
-        """Обновляет интервал проверки (отменяет старый воркер)."""
-        if service_id in self._workers:
-            self._workers[service_id].cancel()
-            logger.info(
-                "Rescheduled service %s to interval %dms",
-                service_id,
-                new_interval_ms,
+    async def reschedule(self, service_id: int) -> None:
+        """Пересобрать таску при изменении сервиса (T2.8)."""
+        if service_id not in self._tasks:
+            logger.warning(
+                "No task found for service %s to reschedule", service_id
             )
+            return
 
-    async def reschedule_from_db(self, service_id: str) -> None:
-        """Перечитывает сервис из БД и обновляет воркер."""
-        assert self._session_factory is not None
-        session = self._session_factory()
+        task = self._tasks[service_id]
+        task.cancel()
         try:
-            result = await session.execute(
-                select(Service).where(Service.id == service_id)
-            )
-            service = result.scalar_one_or_none()
+            await task
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._tasks.pop(service_id, None)
 
-            if service is None or not service.is_active:
-                self.remove_service(service_id)
+        # Перечитать сервис из БД и запустить заново
+        session = get_session()
+        try:
+            service = await session.get(Service, service_id)
+            if service and service.is_active:
+                self._spawn(service)
             else:
-                self.add_service(
-                    service_id=str(service.id),
-                    url=service.url,
-                    interval_ms=service.interval_ms,
+                logger.info(
+                    "Service %s is no longer active, worker not restarted",
+                    service_id,
                 )
         finally:
             await session.close()
 
-    async def _worker_loop(
-        self, service_id: str, url: str, interval_ms: int
-    ) -> None:
-        """Цикл проверки одного сервиса."""
-        while self._running:
-            try:
-                await self._check_service(service_id, url)
-            except asyncio.CancelledError:
-                logger.info("Worker for service %s cancelled", service_id)
-                break
-            except Exception:
-                logger.exception("Error in worker for service %s", service_id)
-
-            await asyncio.sleep(interval_ms / 1000.0)
-
-    async def _check_service(self, service_id: str, url: str) -> None:
-        """Выполняет одну проверку сервиса."""
-        self._checks_total += 1
-        started = asyncio.get_event_loop().time()
-
-        status_code = None
-        error_message = None
-
-        try:
-            response = await self._http_client.get(url)
-            status_code = response.status_code
-            response_time = (asyncio.get_event_loop().time() - started) * 1000
-        except httpx.TimeoutException:
-            error_message = "timeout"
-            response_time = None
-        except httpx.RequestError as exc:
-            error_message = str(exc)
-            response_time = None
-
-        is_up = evaluate_response(status_code, error_message)
-        if not is_up:
-            self._checks_failed += 1
-
-        check_result = CheckResult(
-            service_id=service_id,
-            is_up=is_up,
-            response_time_ms=response_time,
-            status_code=status_code,
-            error_message=error_message,
+    async def fire_callbacks(self, check: CheckResult) -> None:
+        """Вызвать все коллбэки с protection от падений."""
+        if not self._callbacks:
+            return
+        await asyncio.gather(
+            *(cb(check) for cb in self._callbacks),
+            return_exceptions=True,
         )
 
-        await self._save_result(check_result)
-        await self._fire_callbacks(check_result)
-
-    async def _save_result(self, check_result: CheckResult) -> None:
-        """Сохраняет результат проверки в БД."""
-        assert self._session_factory is not None
-        session = self._session_factory()
-        try:
-            session.add(check_result)
-            await session.commit()
-        except Exception:
-            logger.exception("Failed to save check result")
-        finally:
-            await session.close()
-
-    async def _fire_callbacks(self, check_result: CheckResult) -> None:
-        """Вызывает зарегистрированные callback'и."""
-        if self._callbacks:
+    async def stop(self) -> None:
+        """Graceful shutdown (T2.9)."""
+        logger.info("Stopping scheduler runner...")
+        for task in list(self._tasks.values()):
+            task.cancel()
+        if self._tasks:
             await asyncio.gather(
-                *[cb(check_result) for cb in self._callbacks],
-                return_exceptions=True,
+                *self._tasks.values(), return_exceptions=True
             )
+        self._tasks.clear()
+
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+        logger.info("scheduler stopped")
+
+    @property
+    def http_client(self) -> httpx.AsyncClient:
+        assert self._client is not None, "SchedulerRunner not started"
+        return self._client
 
 
-# Глобальный экземпляр
+# Глобальный singleton
 scheduler_runner = SchedulerRunner()
