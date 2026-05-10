@@ -169,3 +169,4 @@ settings.toml
 *-test-results.xml
 
 .claude/
+TASKS.md
