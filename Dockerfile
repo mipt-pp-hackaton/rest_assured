@@ -1,28 +1,43 @@
-FROM python:3.13-slim-trixie AS builder
+# syntax=docker/dockerfile:1.7
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-     build-essential \
-     git \
-  && rm -rf /var/lib/apt/lists/*
+# Pin to specific patch version. Update digest via: docker pull python:3.13.3-slim
+ARG PYTHON_IMAGE=python:3.13.3-slim
 
+FROM ${PYTHON_IMAGE} AS builder
+WORKDIR /build
+
+ENV POETRY_VERSION=1.8.4 \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
+
+# Layer-cache: deps only
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --only main --no-root --no-interaction --no-ansi --sync
+
+# ---- Runtime stage ----
+FROM ${PYTHON_IMAGE} AS runtime
 WORKDIR /app
 
-COPY . .
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN pip install --no-cache-dir poetry \
-  && poetry config virtualenvs.create false
+# Non-root user
+RUN groupadd --system app && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
 
-RUN poetry build --format wheel
+# Bring deps from builder
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-FROM python:3.13-slim AS runtime
+# App sources
+COPY --chown=app:app rest_assured/ rest_assured/
+COPY --chown=app:app settings.toml.example settings.toml
 
+USER app
+EXPOSE 8000
 
-COPY --from=builder /app/dist /tmp/dist
-
-RUN pip install --no-cache-dir /tmp/dist/*.whl \
-  && rm -rf /tmp/dist
-
-COPY settings.toml .
-
-CMD pa-migrate --config settings.toml && pa-server --config settings.toml
+# exec-form: SIGTERM is forwarded to uvicorn (graceful scheduler shutdown)
+CMD ["sh", "-c", "python -m alembic -c rest_assured/src/alembic.ini upgrade heads && exec uvicorn rest_assured.src.main:app --host 0.0.0.0 --port 8000"]

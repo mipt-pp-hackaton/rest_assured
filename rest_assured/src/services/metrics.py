@@ -22,9 +22,7 @@ def compute_current_uptime(checks: list[CheckResult]) -> int:
             continue
 
         if previous_check is not None and previous_check.is_up:
-            current_uptime += int(
-                (check.checked_at - previous_check.checked_at).total_seconds()
-            )
+            current_uptime += int((check.checked_at - previous_check.checked_at).total_seconds())
 
         previous_check = check
 
@@ -39,9 +37,7 @@ def compute_sla(checks: list[CheckResult]) -> float:
     if len(checks) == 1:
         return 1.0 if checks[0].is_up else 0.0
 
-    total_monitoring_time = int(
-        (checks[-1].checked_at - checks[0].checked_at).total_seconds()
-    )
+    total_monitoring_time = int((checks[-1].checked_at - checks[0].checked_at).total_seconds())
 
     if total_monitoring_time <= 0:
         return 0.0
@@ -51,9 +47,7 @@ def compute_sla(checks: list[CheckResult]) -> float:
 
     for check in checks[1:]:
         if previous_check.is_up and check.is_up:
-            total_uptime += int(
-                (check.checked_at - previous_check.checked_at).total_seconds()
-            )
+            total_uptime += int((check.checked_at - previous_check.checked_at).total_seconds())
 
         previous_check = check
 

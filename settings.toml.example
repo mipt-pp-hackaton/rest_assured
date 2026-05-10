@@ -6,6 +6,10 @@ use_testcontainers = "True"
 [db_settings]
 name = "test_db"
 user = "user"
-password = "password"
-host = "localhost"
+password = "CHANGE_ME"
+host = "postgres"
 port = 5432
+
+[scheduler]
+poll_interval_seconds = 5
+default_timeout_ms = 5000

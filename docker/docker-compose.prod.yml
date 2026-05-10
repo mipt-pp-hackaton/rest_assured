@@ -1,38 +1,69 @@
 services:
   postgres:
-    image: postgres:18
+    image: postgres:17-alpine
     restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: test_db
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:?required}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata_test:/var/lib/postgresql
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d test_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - backend
 
   app:
     build:
       context: ..
       dockerfile: Dockerfile
-    image: rest-assured:latest
+    image: rest-assured:${APP_VERSION:?required}
     restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;\n\nimport socket; socket.setdefaulttimeout(2);\n\ntry:\n    r=urllib.request.urlopen('http://localhost:8000/api/v1/misc/health', timeout=2)\n    sys.exit(0 if r.getcode()==200 else 1)\nexcept Exception:\n    sys.exit(1)\""]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/misc/health', timeout=2).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - backend
+
+  test-service:
+    build:
+      context: ../test-service
+      dockerfile: Dockerfile
+    image: test-service:${TEST_SERVICE_VERSION:?required}
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthy', timeout=2).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - backend
 
 volumes:
-  pgdata_test:
+  pgdata:
+
+networks:
+  backend:
+    driver: bridge
