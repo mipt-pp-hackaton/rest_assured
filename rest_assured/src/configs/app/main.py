@@ -19,6 +19,11 @@ class Settings(BaseModel):
     def load(cls) -> "Settings":
         root = Path(__file__).parent.parent.parent.parent.parent
         toml_path = root / "settings.toml"
+        if not toml_path.exists():
+            raise FileNotFoundError(
+                f"{toml_path} not found. "
+                "Copy settings.toml.example to settings.toml and adjust values."
+            )
         with open(toml_path, "rb") as f:
             data = tomllib.load(f)
         return cls(
