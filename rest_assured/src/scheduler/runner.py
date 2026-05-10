@@ -54,7 +54,7 @@ class SchedulerRunner:
         )
         session = get_session()
         try:
-            services = (await session.exec(select(Service).where(Service.is_active == True))).all()
+            services = (await session.exec(select(Service).where(Service.is_active is True))).all()
         finally:
             await session.close()
 

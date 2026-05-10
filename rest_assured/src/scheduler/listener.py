@@ -83,7 +83,7 @@ class ServiceChangeListener:
                 session = get_session()
                 try:
                     services = (
-                        await session.exec(select(Service).where(Service.is_active == True))
+                        await session.exec(select(Service).where(Service.is_active is True))
                     ).all()
                 finally:
                     await session.close()
