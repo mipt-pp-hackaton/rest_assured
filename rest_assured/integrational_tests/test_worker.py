@@ -41,7 +41,9 @@ async def test_worker_writes_check_results(postgres_connection, httpx_mock):
 @pytest.mark.asyncio
 async def test_worker_handles_timeout(postgres_connection, httpx_mock):
     for _ in range(10):
-        httpx_mock.add_exception(url="http://fake/timeout", exception=httpx.TimeoutException("timeout"))
+        httpx_mock.add_exception(
+            url="http://fake/timeout", exception=httpx.TimeoutException("timeout")
+        )
 
     s = Service(name="t2", url="http://fake/timeout", interval_ms=200, expected_status=200)
     postgres_connection.add(s)
