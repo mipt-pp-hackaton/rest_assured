@@ -15,4 +15,5 @@ def test_no_module_level_listener_singleton():
 
 def test_no_module_level_runner_singleton():
     import rest_assured.src.main as main_mod
-    assert not hasattr(main_mod, "scheduler_runner") or callable(getattr(main_mod, "scheduler_runner", None))
+    sr = getattr(main_mod, "scheduler_runner", None)
+    assert sr is None or callable(sr)

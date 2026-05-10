@@ -1,7 +1,8 @@
 """T16: listener использует публичные методы SchedulerRunner и переименован callback."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 from rest_assured.src.scheduler.runner import SchedulerRunner

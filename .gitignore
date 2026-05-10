@@ -36,7 +36,9 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
+.claude/
+TASKS.md
+CLAUDE.md
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -168,5 +170,3 @@ settings.toml
 # pytest-junit output
 *-test-results.xml
 
-.claude/
-TASKS.md

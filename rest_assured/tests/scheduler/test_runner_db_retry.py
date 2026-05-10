@@ -1,4 +1,7 @@
-"""T14: start() устойчив к недоступной БД — 3×1с retry, после неуспеха — warning + пустые воркеры."""
+"""T14: start() устойчив к недоступной БД.
+
+3×1с retry, после неуспеха — warning + пустые воркеры.
+"""
 
 from unittest.mock import AsyncMock, MagicMock
 

@@ -1,11 +1,12 @@
 """T16: poll-loop использует публичные active_service_ids/ensure_running/stop_service."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from rest_assured.src.models.services import Service
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 from rest_assured.src.scheduler.runner import SchedulerRunner
-from rest_assured.src.models.services import Service
 
 
 @pytest.mark.asyncio
