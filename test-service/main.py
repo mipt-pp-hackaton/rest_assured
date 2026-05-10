@@ -1,9 +1,10 @@
 """Тестовый сервис с разными эндпоинтами для демонстрации."""
 
+import asyncio
 import random
-import time
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Test Service for Rest Assured")
 
@@ -19,7 +20,7 @@ async def healthy():
 @app.get("/down")
 async def down():
     """Всегда отвечает 500."""
-    return {"status": "error"}, 500
+    return JSONResponse(content={"status": "error"}, status_code=500)
 
 
 @app.get("/flaky")
@@ -27,13 +28,13 @@ async def flaky():
     """Отвечает 200 или 500 случайно."""
     if random.random() < 0.5:
         return {"status": "ok"}
-    return {"status": "error"}, 500
+    return JSONResponse(content={"status": "error"}, status_code=500)
 
 
 @app.get("/slow")
 async def slow():
     """Отвечает с задержкой 3 секунды."""
-    time.sleep(3)
+    await asyncio.sleep(3)
     return {"status": "ok"}
 
 
@@ -41,7 +42,7 @@ async def slow():
 async def controlled():
     """Управляемый эндпоинт — возвращает 200 или 500."""
     if _controlled_down:
-        return {"status": "error"}, 500
+        return JSONResponse(content={"status": "error"}, status_code=500)
     return {"status": "ok"}
 
 

@@ -1,10 +1,12 @@
 import os
+import socket
 import subprocess
 from pathlib import Path
 from typing import Any, Generator
 
 import pytest
 import pytest_asyncio
+from pydantic import SecretStr
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.testclient import TestClient
 from testcontainers.postgres import PostgresContainer
@@ -12,6 +14,25 @@ from testcontainers.postgres import PostgresContainer
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.main import app
 from rest_assured.src.repositories.database_session import get_session
+
+
+@pytest.fixture(autouse=True)
+def _allow_test_hosts(monkeypatch):
+    """Мокаем socket.getaddrinfo, чтобы тестовые URL (http://fake/...) проходили
+    SSRF-валидацию модели Service (резолвим в публичный IP example.com)."""
+
+    def _fake_getaddrinfo(host, port, *args, **kwargs):
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                0,
+                "",
+                ("93.184.216.34", port or 80),
+            )
+        ]
+
+    monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,7 +46,7 @@ def _bootstrap_db() -> Generator[None, Any, None]:
             settings.db_settings.name = postgres.dbname
             settings.db_settings.port = int(postgres.get_exposed_port(5432))
             settings.db_settings.user = postgres.username
-            settings.db_settings.password = postgres.password
+            settings.db_settings.password = SecretStr(postgres.password)
             settings.db_settings.host = postgres.get_container_host_ip()
 
         run_migrations()

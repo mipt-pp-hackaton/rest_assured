@@ -6,7 +6,7 @@ use_testcontainers = "True"
 [db_settings]
 name = "test_db"
 user = "user"
-password = "password"
+password = "CHANGE_ME"
 host = "postgres"
 port = 5432
 

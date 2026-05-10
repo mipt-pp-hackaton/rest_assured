@@ -26,14 +26,14 @@ def upgrade():
         sa.Column("interval_ms", sa.Integer(), nullable=False),
         sa.Column("expected_status", sa.Integer(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "check_results",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("service_id", sa.Integer(), nullable=False),
-        sa.Column("checked_at", sa.DateTime(), nullable=False),
+        sa.Column("checked_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("is_up", sa.Boolean(), nullable=False),
         sa.Column("http_status", sa.Integer(), nullable=True),
         sa.Column("latency_ms", sa.Integer(), nullable=True),

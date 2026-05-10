@@ -3,6 +3,7 @@ import os
 
 from alembic import command
 from alembic.config import Config
+from pydantic import SecretStr
 from testcontainers.postgres import PostgresContainer
 
 from rest_assured.src.configs.app.main import settings
@@ -28,7 +29,7 @@ def main():
     settings.db_settings.name = postgres.dbname
     settings.db_settings.port = int(postgres.get_exposed_port(5432))
     settings.db_settings.user = postgres.username
-    settings.db_settings.password = postgres.password
+    settings.db_settings.password = SecretStr(postgres.password)
     settings.db_settings.host = postgres.get_container_host_ip()
 
     # ВАЖНО: путь к alembic.ini относительно rest_assured/src/

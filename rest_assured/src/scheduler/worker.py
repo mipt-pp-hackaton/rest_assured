@@ -38,6 +38,13 @@ async def worker_loop(runner, service: Service) -> None:
                 latency_ms = int((datetime.now(timezone.utc) - t_start).total_seconds() * 1000)
                 check = evaluate_response(service, exception=exc, latency_ms=latency_ms)
 
+            # Обновить счётчики ДО commit'а — факт проверки уже зафиксирован
+            # (T15: при ошибке коммита счётчики не должны теряться).
+            runner.checks_total += 1
+            if not check.is_up:
+                runner.checks_failed += 1
+            runner.last_loop_at = datetime.now(timezone.utc)
+
             # Сохранить результат в БД
             session = get_session()
             try:
@@ -46,15 +53,11 @@ async def worker_loop(runner, service: Service) -> None:
                 await session.refresh(check)
             except Exception:
                 await session.rollback()
-                raise
+                log.exception(
+                    "failed to persist check_result for service %s", service.id
+                )
             finally:
                 await session.close()
-
-            # Обновить счётчики
-            runner.checks_total += 1
-            if not check.is_up:
-                runner.checks_failed += 1
-            runner.last_loop_at = datetime.now(timezone.utc)
 
             # Вызвать коллбэки (Эпик 4 — incidents/notifications)
             await runner.fire_callbacks(check)

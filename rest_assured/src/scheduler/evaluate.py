@@ -1,6 +1,6 @@
 """Классификация HTTP-ответов (T2.6)."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -23,7 +23,7 @@ def evaluate_response(
       (expected_status IS NULL AND 200 <= status < 300)) → is_up = True
     - Иначе → is_up = False
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if exception is not None:
         return CheckResult(
@@ -32,10 +32,11 @@ def evaluate_response(
             is_up=False,
             http_status=None,
             latency_ms=latency_ms,
-            error=_truncate(repr(exception)),
+            error=_truncate(f"{type(exception).__name__}: {str(exception)[:480]}"),
         )
 
-    assert response is not None, "Either response or exception must be provided"
+    if response is None:
+        raise RuntimeError("Either response or exception must be provided")
     status = response.status_code
 
     if service.expected_status is not None:

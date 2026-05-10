@@ -1,0 +1,46 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+
+# Tests
+rest_assured/tests
+rest_assured/integrational_tests
+*-test-results.xml
+.coverage
+htmlcov
+
+# Local config / secrets
+.env
+.env.local
+settings.toml
+
+# Docs / meta
+README.md
+README*.md
+CHANGELOG.md
+TASKS.md
+docs/
+
+# Editor / OS
+.idea
+.vscode
+.DS_Store
+
+# Docker
+docker/
+docker-compose*.yml
+Dockerfile
+.dockerignore

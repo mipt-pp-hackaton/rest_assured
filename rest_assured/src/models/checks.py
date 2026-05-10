@@ -1,6 +1,6 @@
 """Модель результата проверки сервиса (T2.3)."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Index, desc
 from sqlmodel import Field, SQLModel
@@ -21,7 +21,7 @@ class CheckResult(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     service_id: int = Field(foreign_key="services.id", index=True)
     checked_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         index=True,
     )
     is_up: bool = Field(description="Статус доступности сервиса")
