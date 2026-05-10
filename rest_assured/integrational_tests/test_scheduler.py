@@ -1,6 +1,5 @@
 """Интеграционные тесты планировщика (обновленные)."""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx

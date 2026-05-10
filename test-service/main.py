@@ -3,7 +3,7 @@
 import random
 import time
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 
 app = FastAPI(title="Test Service for Rest Assured")
 

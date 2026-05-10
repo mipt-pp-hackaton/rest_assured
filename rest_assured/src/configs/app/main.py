@@ -5,8 +5,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from rest_assured.src.configs.app.db import DBConfig
 from rest_assured.src.configs.app.app import APPConfig
+from rest_assured.src.configs.app.db import DBConfig
 from rest_assured.src.configs.app.scheduler import SchedulerSettings
 
 

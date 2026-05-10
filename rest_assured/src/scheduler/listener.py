@@ -36,15 +36,11 @@ class ServiceChangeListener:
                 password=settings.db_settings.password,
                 database=settings.db_settings.name,
             )
-            await self._conn.add_listener(
-                "service_changed", self._on_service_changed
-            )
+            await self._conn.add_listener("service_changed", self._on_service_changed)
             self._running = True
             logger.info("ServiceChangeListener started (LISTEN)")
         except Exception:
-            logger.warning(
-                "Could not start LISTEN, falling back to poll-only mode"
-            )
+            logger.warning("Could not start LISTEN, falling back to poll-only mode")
 
         # Всегда запускаем fallback poll
         self._poll_task = asyncio.create_task(self._poll_loop())
@@ -63,29 +59,21 @@ class ServiceChangeListener:
             self._conn = None
         logger.info("ServiceChangeListener stopped")
 
-    async def _on_service_changed(
-        self, conn, pid, channel, payload
-    ) -> None:
+    async def _on_service_changed(self, conn, pid, channel, payload) -> None:
         """Обрабатывает уведомление об изменении сервиса."""
-        logger.info(
-            "Received notification: channel=%s, payload=%s", channel, payload
-        )
+        logger.info("Received notification: channel=%s, payload=%s", channel, payload)
         if self._runner and payload:
             try:
                 service_id = int(payload)
                 await self._runner.reschedule(service_id)
             except (ValueError, TypeError):
-                logger.error(
-                    "Invalid payload for service_changed: %s", payload
-                )
+                logger.error("Invalid payload for service_changed: %s", payload)
 
     async def _poll_loop(self) -> None:
         """Fallback-poll: раз в N секунд проверяет изменения в БД."""
         poll_interval = settings.scheduler.poll_interval_seconds
 
-        logger.info(
-            "Starting fallback poll loop (interval=%ds)", poll_interval
-        )
+        logger.info("Starting fallback poll loop (interval=%ds)", poll_interval)
         while self._running:
             try:
                 await asyncio.sleep(poll_interval)
@@ -95,11 +83,7 @@ class ServiceChangeListener:
                 session = get_session()
                 try:
                     services = (
-                        await session.exec(
-                            select(Service).where(
-                                Service.is_active == True
-                            )
-                        )
+                        await session.exec(select(Service).where(Service.is_active == True))
                     ).all()
                 finally:
                     await session.close()
@@ -109,20 +93,14 @@ class ServiceChangeListener:
                     current_ids = set(self._runner._tasks.keys())
 
                     for sid in active_ids - current_ids:
-                        logger.info(
-                            "Poll: new service detected: %s", sid
-                        )
+                        logger.info("Poll: new service detected: %s", sid)
                         # Перечитываем сервис целиком
-                        s = next(
-                            (x for x in services if x.id == sid), None
-                        )
+                        s = next((x for x in services if x.id == sid), None)
                         if s:
                             self._runner._spawn(s)
 
                     for sid in current_ids - active_ids:
-                        logger.info(
-                            "Poll: service deactivated: %s", sid
-                        )
+                        logger.info("Poll: service deactivated: %s", sid)
                         await self._runner.reschedule(sid)
 
             except asyncio.CancelledError:

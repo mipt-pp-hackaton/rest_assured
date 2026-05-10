@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from rest_assured.src.api.misc import misc_router
-from rest_assured.src.scheduler.runner import scheduler_runner
 from rest_assured.src.scheduler.listener import ServiceChangeListener
+from rest_assured.src.scheduler.runner import scheduler_runner
 
 listener = ServiceChangeListener()
 listener.set_runner(scheduler_runner)

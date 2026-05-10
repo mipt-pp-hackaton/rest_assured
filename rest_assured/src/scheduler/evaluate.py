@@ -41,9 +41,7 @@ def evaluate_response(
     if service.expected_status is not None:
         is_up = status == service.expected_status
         error_msg = (
-            None
-            if is_up
-            else f"unexpected status {status} (expected {service.expected_status})"
+            None if is_up else f"unexpected status {status} (expected {service.expected_status})"
         )
     else:
         is_up = 200 <= status < 300

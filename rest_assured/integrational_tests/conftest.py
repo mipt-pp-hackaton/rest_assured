@@ -1,7 +1,7 @@
-import subprocess
 import os
+import subprocess
 from pathlib import Path
-from typing import Generator, Any
+from typing import Any, Generator
 
 import pytest
 import pytest_asyncio
@@ -63,7 +63,7 @@ def run_migrations(revision: str = "heads") -> None:
     if result.returncode != 0:
         print(f"STDOUT:\n{result.stdout}")
         print(f"STDERR:\n{result.stderr}")
-        raise RuntimeError(f"Миграции не накатились")
+        raise RuntimeError("Миграции не накатились")
 
 
 @pytest.fixture

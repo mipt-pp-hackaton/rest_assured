@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
+from datetime import datetime
 
 import httpx
 from sqlmodel import select
@@ -54,11 +54,7 @@ class SchedulerRunner:
         )
         session = get_session()
         try:
-            services = (
-                await session.exec(
-                    select(Service).where(Service.is_active == True)
-                )
-            ).all()
+            services = (await session.exec(select(Service).where(Service.is_active == True))).all()
         finally:
             await session.close()
 
@@ -77,16 +73,12 @@ class SchedulerRunner:
             name=f"check_worker_{service.id}",
         )
         self._tasks[service.id] = task
-        logger.info(
-            "Spawned worker for service %s (id=%s)", service.name, service.id
-        )
+        logger.info("Spawned worker for service %s (id=%s)", service.name, service.id)
 
     async def reschedule(self, service_id: int) -> None:
         """Пересобрать таску при изменении сервиса (T2.8)."""
         if service_id not in self._tasks:
-            logger.warning(
-                "No task found for service %s to reschedule", service_id
-            )
+            logger.warning("No task found for service %s to reschedule", service_id)
             return
 
         task = self._tasks[service_id]
@@ -127,9 +119,7 @@ class SchedulerRunner:
         for task in list(self._tasks.values()):
             task.cancel()
         if self._tasks:
-            await asyncio.gather(
-                *self._tasks.values(), return_exceptions=True
-            )
+            await asyncio.gather(*self._tasks.values(), return_exceptions=True)
         self._tasks.clear()
 
         if self._client:

@@ -32,19 +32,11 @@ async def worker_loop(runner, service: Service) -> None:
                     method=service.http_method,
                     url=service.url,
                 )
-                latency_ms = int(
-                    (datetime.now(timezone.utc) - t_start).total_seconds() * 1000
-                )
-                check = evaluate_response(
-                    service, response=resp, latency_ms=latency_ms
-                )
+                latency_ms = int((datetime.now(timezone.utc) - t_start).total_seconds() * 1000)
+                check = evaluate_response(service, response=resp, latency_ms=latency_ms)
             except Exception as exc:
-                latency_ms = int(
-                    (datetime.now(timezone.utc) - t_start).total_seconds() * 1000
-                )
-                check = evaluate_response(
-                    service, exception=exc, latency_ms=latency_ms
-                )
+                latency_ms = int((datetime.now(timezone.utc) - t_start).total_seconds() * 1000)
+                check = evaluate_response(service, exception=exc, latency_ms=latency_ms)
 
             # Сохранить результат в БД
             session = get_session()
