@@ -35,9 +35,16 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 
+[tool.semantic_release.changelog]
+template_dir = "templates"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "style", "test"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["rest_assured/tests", "rest_assured/integrational_tests"]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
+pythonpath = ["rest_assured"]
