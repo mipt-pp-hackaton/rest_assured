@@ -53,9 +53,7 @@ async def worker_loop(runner, service: Service) -> None:
                 await session.refresh(check)
             except Exception:
                 await session.rollback()
-                log.exception(
-                    "failed to persist check_result for service %s", service.id
-                )
+                log.exception("failed to persist check_result for service %s", service.id)
             finally:
                 await session.close()
 

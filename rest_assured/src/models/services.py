@@ -7,7 +7,7 @@ from typing import Literal, Optional
 from urllib.parse import urlparse
 
 from pydantic import field_validator
-from sqlalchemy import Column, String
+from sqlalchemy import Column, DateTime, String
 from sqlmodel import Field, SQLModel
 
 
@@ -53,9 +53,7 @@ class Service(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     url: str = Field(max_length=2048, description="URL сервиса для мониторинга")
     name: str = Field(max_length=255, description="Название сервиса")
-    http_method: Literal[
-        "GET", "POST", "HEAD", "PUT", "DELETE", "PATCH", "OPTIONS"
-    ] = Field(
+    http_method: Literal["GET", "POST", "HEAD", "PUT", "DELETE", "PATCH", "OPTIONS"] = Field(
         default="GET",
         description="HTTP метод для проверки (GET, POST, HEAD и т.д.)",
         sa_column=Column(String(16), nullable=False, default="GET"),
@@ -73,6 +71,7 @@ class Service(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Дата создания",
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     @field_validator("url")

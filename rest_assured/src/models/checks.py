@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Index, desc
+from sqlalchemy import Column, DateTime, Index, desc
 from sqlmodel import Field, SQLModel
 
 
@@ -22,7 +22,7 @@ class CheckResult(SQLModel, table=True):
     service_id: int = Field(foreign_key="services.id", index=True)
     checked_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        index=True,
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
     is_up: bool = Field(description="Статус доступности сервиса")
     http_status: int | None = Field(default=None)
