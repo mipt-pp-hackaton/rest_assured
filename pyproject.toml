@@ -66,3 +66,6 @@ changelog_file = "CHANGELOG.md"
 allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "style", "test"]
 minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]
+
+[tool.pytest.ini_options]
+pythonpath = ["rest_assured"]
