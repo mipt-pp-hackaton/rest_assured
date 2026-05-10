@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-05-10)
+
+### Bug Fixes
+
+- Ci
+  ([`eebad13`](https://github.com/mipt-pp-hackaton/rest_assured/commit/eebad1396ed33238187739db4861e17fd8c4e016))
+
+- Reformat
+  ([`ceadefe`](https://github.com/mipt-pp-hackaton/rest_assured/commit/ceadefed7cb5f5c1d07e9c4f13a6daead1b44f71))
+
+- **epic-2**: Address PR review findings for health-checking scheduler
+  ([`d206984`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d206984b9474565496a06b45578ed8d2970b70b1))
+
+### Chores
+
+- Update gitignore
+  ([`7678c06`](https://github.com/mipt-pp-hackaton/rest_assured/commit/7678c06cc814f57a8ad4df328895110db6564a0a))
+
+### Refactoring
+
+- Clean up imports and improve code readability in various modules
+  ([`4848e39`](https://github.com/mipt-pp-hackaton/rest_assured/commit/4848e39912881fcb86d2bb6ecb0eb6ce6a0cbc85))
+
+- Update test imports and improve readability in scheduler tests
+  ([`1694728`](https://github.com/mipt-pp-hackaton/rest_assured/commit/1694728fa786cc4731f5d6b250f62a9f88d9fe1a))
+
+
 ## v1.1.0 (2026-05-10)
 
 ### Chores
