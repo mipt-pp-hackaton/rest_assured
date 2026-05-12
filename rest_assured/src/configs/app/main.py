@@ -17,7 +17,7 @@ env_settings = Dynaconf(
     settings_files=["settings.toml", "settings.yml"], env_prefix="DYNACONF"
 )
 settings = Settings(
-    app=env_settings["app_settings"],
-    db=env_settings["db_settings"],
+    app_settings=env_settings["app_settings"],
+    db_settings=env_settings["db_settings"],
     scheduler=env_settings["scheduler"],
 )
