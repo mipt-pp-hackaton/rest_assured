@@ -8,9 +8,12 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from rest_assured.src.configs.app.main import settings
-from rest_assured.src.models import CheckResult, Service  # noqa: F401
+from rest_assured.src.models import CheckResult, Service, Incident, NotificationLog  # noqa: F401
 
-target_metadata = [Service.metadata, CheckResult.metadata]
+target_metadata = [Service.metadata,
+    CheckResult.metadata,
+    Incident.metadata,
+    NotificationLog.metadata,]
 
 
 def get_url():
