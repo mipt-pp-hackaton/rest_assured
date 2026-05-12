@@ -72,7 +72,7 @@ async def test_check_result_with_error(postgres_connection):
 
 @pytest.mark.asyncio
 async def test_check_result_index_works(postgres_connection):
-    result = await postgres_connection.execute(
+    result = await postgres_connection.exec(
         text(
             "SELECT indexname FROM pg_indexes "
             "WHERE tablename = 'check_results' "
