@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-05-12)
+
+### Features
+
+- Add smtp and notifications configurations to global Settings and clean up redundant integration
+  tests
+  ([`816714e`](https://github.com/mipt-pp-hackaton/rest_assured/commit/816714e38a9b8e9b1df94761f4a293cb90bd21da))
+
+
 ## v1.2.1 (2026-05-12)
 
 ### Bug Fixes
