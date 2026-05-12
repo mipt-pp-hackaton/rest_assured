@@ -27,7 +27,6 @@ def _bootstrap_db() -> Generator[None, Any, None]:
             settings.db_settings.user = postgres.username
             settings.db_settings.password = SecretStr(postgres.password)
             settings.db_settings.host = postgres.get_container_host_ip()
-            print(f"Settings {settings.db_settings}")
         run_migrations()
         yield
     finally:
@@ -38,6 +37,9 @@ def _bootstrap_db() -> Generator[None, Any, None]:
 @pytest_asyncio.fixture
 async def postgres_connection(_bootstrap_db) -> AsyncSession:
     session = get_session()
+    from sqlalchemy import text
+    await session.exec(text("TRUNCATE TABLE check_results, services RESTART IDENTITY CASCADE"))
+    await session.commit()
     try:
         yield session
     finally:
