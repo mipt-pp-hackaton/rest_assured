@@ -1,5 +1,6 @@
 import os
 from typing import Generator, Any
+from pydantic import SecretStr
 
 import pytest
 import pytest_asyncio
@@ -18,15 +19,15 @@ from rest_assured.src.repositories.database_session import get_session
 def _bootstrap_db() -> Generator[None, Any, None]:
     postgres = None
     try:
-        if settings.app.use_testcontainers:
+        if settings.app_settings.use_testcontainers:
             postgres = PostgresContainer("postgres:18-alpine")
             postgres.start()
-            settings.db.name = postgres.dbname
-            settings.db.port = int(postgres.get_exposed_port(5432))
-            settings.db.user = postgres.username
-            settings.db.password = postgres.password
-            settings.db.host = postgres.get_container_host_ip()
-
+            settings.db_settings.name = postgres.dbname
+            settings.db_settings.port = int(postgres.get_exposed_port(5432))
+            settings.db_settings.user = postgres.username
+            settings.db_settings.password = SecretStr(postgres.password)
+            settings.db_settings.host = postgres.get_container_host_ip()
+            print(f"Settings {settings.db_settings}")
         run_migrations()
         yield
     finally:
@@ -36,12 +37,11 @@ def _bootstrap_db() -> Generator[None, Any, None]:
 
 @pytest_asyncio.fixture
 async def postgres_connection(_bootstrap_db) -> AsyncSession:
-    agen = get_session()
-    session = await agen.__anext__()
+    session = get_session()
     try:
         yield session
     finally:
-        await agen.aclose()
+        await session.close()
 
 
 def run_migrations(revision: str = "heads") -> None:
