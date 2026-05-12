@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v1.2.1 (2026-05-12)
+
+### Bug Fixes
+
+- Rollback chages
+  ([`1012249`](https://github.com/mipt-pp-hackaton/rest_assured/commit/1012249a30fe6cb6dc72cfc35983d8ff28ce4866))
+
+- Update postgres healthcheck username in docker-compose and document environment requirements in
+  README
+  ([`6ab80f3`](https://github.com/mipt-pp-hackaton/rest_assured/commit/6ab80f36d2e1659ad7eb1338473879d2feb13de7))
+
+### Chores
+
+- Auto format
+  ([`30ff932`](https://github.com/mipt-pp-hackaton/rest_assured/commit/30ff932f94b87e79d64882e1999f48f336b150ac))
+
+### Refactoring
+
+- Clean up code formatting and imports across configuration and database modules
+  ([`f81d9a1`](https://github.com/mipt-pp-hackaton/rest_assured/commit/f81d9a1e6d4621d59da2a3b2f790c99661fa88da))
+
+- Configure NullPool for testcontainers, reset database tables in integration tests, and update db
+  driver and execution method
+  ([`98f8372`](https://github.com/mipt-pp-hackaton/rest_assured/commit/98f837256647c5e9a329940e211298fb5d65085c))
+
+- Update service models and remove obsolete settings loader test
+  ([`1176b6c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/1176b6c1ec4d900744801b9b8ffd521689804ffb))
+
+- Update Settings model instantiation to use app_settings and db_settings keys
+  ([`d3cf1d0`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d3cf1d04d3a6ebbd35805d84b8057576fb30ed3e))
+
+- Update test configuration to use updated settings schema and simplify async session management
+  ([`fa65873`](https://github.com/mipt-pp-hackaton/rest_assured/commit/fa65873151daf0093b88b300b46324bbe608628f))
+
+
 ## v1.2.0 (2026-05-10)
 
 ### Bug Fixes
