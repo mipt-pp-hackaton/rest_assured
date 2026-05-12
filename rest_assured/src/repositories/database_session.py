@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rest_assured.src.configs.app.main import settings
@@ -7,13 +8,17 @@ _engine = None
 _sessionmaker = None
 
 
+
+
 def _get_engine():
     global _engine
     if _engine is None:
+        kwargs = {}
+        if getattr(settings.app_settings, "use_testcontainers", False):
+            kwargs["poolclass"] = NullPool
+
         _engine = create_async_engine(
-            url=settings.db_settings.dsl,
-            echo=False,
-            future=True,
+            url=settings.db_settings.dsl, echo=False, future=True, **kwargs
         )
     return _engine
 

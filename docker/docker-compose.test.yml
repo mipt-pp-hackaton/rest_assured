@@ -1,4 +1,27 @@
 services:
+  app_test:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        PYTHON_IMAGE: python:3.13-slim
+    command: >
+      sh -c "python -m alembic -c rest_assured/src/alembic.ini upgrade heads && exec uvicorn rest_assured.src.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ../rest_assured:/app/rest_assured
+      - ../settings.toml:/app/settings.toml
+    ports:
+      - "8000:8000"
+    environment:
+      DYNACONF_DB_SETTINGS__HOST: postgres_test
+      DYNACONF_DB_SETTINGS__NAME: test_db
+      DYNACONF_DB_SETTINGS__USER: user
+      DYNACONF_DB_SETTINGS__PASSWORD: password
+      DYNACONF_APP_SETTINGS__USE_TESTCONTAINERS: "False"
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+
   postgres_test:
     image: postgres:18
     restart: unless-stopped
@@ -11,7 +34,7 @@ services:
     volumes:
       - pgdata_test:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      test: [ "CMD-SHELL", "pg_isready -U test_user -d test_db" ]
       interval: 5s
       timeout: 3s
       retries: 5

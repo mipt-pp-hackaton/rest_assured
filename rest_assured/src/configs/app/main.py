@@ -1,8 +1,4 @@
-"""Главный конфиг приложения."""
-
-import tomllib
-from pathlib import Path
-
+from dynaconf import Dynaconf
 from pydantic import BaseModel
 
 from rest_assured.src.configs.app.app import APPConfig
@@ -15,22 +11,10 @@ class Settings(BaseModel):
     app_settings: APPConfig
     scheduler: SchedulerSettings
 
-    @classmethod
-    def load(cls) -> "Settings":
-        root = Path(__file__).parent.parent.parent.parent.parent
-        toml_path = root / "settings.toml"
-        if not toml_path.exists():
-            raise FileNotFoundError(
-                f"{toml_path} not found. "
-                "Copy settings.toml.example to settings.toml and adjust values."
-            )
-        with open(toml_path, "rb") as f:
-            data = tomllib.load(f)
-        return cls(
-            db_settings=DBConfig(**data["db_settings"]),
-            app_settings=APPConfig(**data["app_settings"]),
-            scheduler=SchedulerSettings(**data["scheduler"]),
-        )
 
-
-settings = Settings.load()
+env_settings = Dynaconf(settings_files=["settings.toml", "settings.yml"], env_prefix="DYNACONF")
+settings = Settings(
+    app_settings=env_settings["app_settings"],
+    db_settings=env_settings["db_settings"],
+    scheduler=env_settings["scheduler"],
+)
