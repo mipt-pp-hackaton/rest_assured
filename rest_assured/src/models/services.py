@@ -25,7 +25,8 @@ def validate_public_url(url: str) -> str:
 
     import os
 
-    if os.environ.get("PYTEST_CURRENT_TEST"):
+    current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
+    if current_test and "test_service_url_validator" not in current_test:
         return url
     try:
         infos = socket.getaddrinfo(
