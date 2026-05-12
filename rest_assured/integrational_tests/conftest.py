@@ -1,11 +1,11 @@
 import os
-from typing import Generator, Any
-from pydantic import SecretStr
+from typing import Any, Generator
 
 import pytest
 import pytest_asyncio
 from alembic import command
 from alembic.config import Config
+from pydantic import SecretStr
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.testclient import TestClient
 from testcontainers.postgres import PostgresContainer

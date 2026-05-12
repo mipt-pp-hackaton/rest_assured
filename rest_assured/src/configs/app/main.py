@@ -1,5 +1,4 @@
 from dynaconf import Dynaconf
-
 from pydantic import BaseModel
 
 from rest_assured.src.configs.app.app import APPConfig
@@ -13,9 +12,7 @@ class Settings(BaseModel):
     scheduler: SchedulerSettings
 
 
-env_settings = Dynaconf(
-    settings_files=["settings.toml", "settings.yml"], env_prefix="DYNACONF"
-)
+env_settings = Dynaconf(settings_files=["settings.toml", "settings.yml"], env_prefix="DYNACONF")
 settings = Settings(
     app_settings=env_settings["app_settings"],
     db_settings=env_settings["db_settings"],

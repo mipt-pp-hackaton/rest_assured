@@ -24,6 +24,7 @@ def validate_public_url(url: str) -> str:
         raise ValueError("url has no hostname")
 
     import os
+
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return url
     try:
