@@ -4,6 +4,7 @@ Revision ID: 002
 Revises: 001
 Create Date: 2026-05-12 23:57:15.000000
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -69,10 +70,14 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        "ix_notification_log_incident_id", "notification_log", ["incident_id"],
+        "ix_notification_log_incident_id",
+        "notification_log",
+        ["incident_id"],
     )
     op.create_index(
-        "ix_notification_log_service_id", "notification_log", ["service_id"],
+        "ix_notification_log_service_id",
+        "notification_log",
+        ["service_id"],
     )
     op.create_index(
         "ix_notification_log_kind_sent",

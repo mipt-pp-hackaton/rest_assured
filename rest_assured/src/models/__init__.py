@@ -1,4 +1,5 @@
 """Модели данных."""
+
 from .checks import CheckResult
 from .incidents import Incident
 from .notifications import NotificationLog

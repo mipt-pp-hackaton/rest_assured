@@ -1,4 +1,5 @@
 """Модель лога уведомлений."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime
@@ -12,7 +13,9 @@ class NotificationLog(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     incident_id: int | None = Field(
-        default=None, foreign_key="incidents.id", index=True,
+        default=None,
+        foreign_key="incidents.id",
+        index=True,
     )
     service_id: int = Field(foreign_key="services.id", index=True)
     kind: str = Field(max_length=50)
