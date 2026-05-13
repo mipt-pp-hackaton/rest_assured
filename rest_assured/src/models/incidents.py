@@ -1,6 +1,8 @@
 """Модель инцидента."""
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
 
 class Incident(SQLModel, table=True):
     __tablename__ = "incidents"

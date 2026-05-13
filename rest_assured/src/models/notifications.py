@@ -1,6 +1,8 @@
 """Модель лога уведомлений."""
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
 
 class NotificationLog(SQLModel, table=True):
     __tablename__ = "notification_log"

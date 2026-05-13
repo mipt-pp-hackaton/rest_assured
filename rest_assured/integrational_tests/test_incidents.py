@@ -1,10 +1,13 @@
 """Интеграционные тесты моделей Incident и NotificationLog."""
 from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
+
 
 @pytest.mark.asyncio
 async def test_create_incident(postgres_connection):
