@@ -10,10 +10,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models import CheckResult, Incident, NotificationLog, Service  # noqa: F401
 
-target_metadata = [Service.metadata,
+target_metadata = [
+    Service.metadata,
     CheckResult.metadata,
     Incident.metadata,
-    NotificationLog.metadata,]
+    NotificationLog.metadata,
+]
 
 
 def get_url():
