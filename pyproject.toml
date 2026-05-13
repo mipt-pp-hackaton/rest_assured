@@ -55,3 +55,7 @@ patch_tags = ["fix", "perf"]
 pythonpath = ["rest_assured"]
 testpaths = ["rest_assured/tests", "rest_assured/integrational_tests"]
 asyncio_mode = "auto"
+
+[tool.poetry.scripts]
+pa-server = "rest_assured.src.cli:main"
+pa-migrate = "rest_assured.src.cli:main"
