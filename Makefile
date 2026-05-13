@@ -11,6 +11,10 @@ lint:
 	@echo "check PEP8"
 	poetry run ruff check .
 
+flint:
+	@echo "check PEP8"
+	poetry run ruff check . --fix
+
 run:
 	@echo "start prod server"
 	fastapi run $(ROOT_PATH)/main.py

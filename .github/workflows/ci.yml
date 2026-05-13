@@ -31,9 +31,6 @@ jobs:
         run: |
           poetry install --no-interaction --no-ansi
 
-      - name: Bootstrap settings.toml
-        run: cp settings.toml.example settings.toml
-
       - name: Run unit tests
         run: make utest
 
@@ -84,9 +81,6 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install --no-interaction --no-ansi
-
-      - name: Bootstrap settings.toml
-        run: cp settings.toml.example settings.toml
 
       - name: Configure settings.toml for integration tests
         run: |
