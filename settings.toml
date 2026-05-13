@@ -1,7 +1,7 @@
 [app_settings]
 host = "0.0.0.0"
 port = 8000
-use_testcontainers = "True"
+use_testcontainers = true
 
 [db_settings]
 name = "test_db"
