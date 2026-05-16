@@ -2,12 +2,20 @@
 
 import asyncio
 import os
-from alembic import context
 from logging.config import fileConfig
+
+from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
+
 from rest_assured.src.configs.app.main import settings
-from rest_assured.src.models import CheckResult, Service, Incident, NotificationLog, User  # noqa: F401
+from rest_assured.src.models import (  # noqa: F401
+    CheckResult,
+    Incident,
+    NotificationLog,
+    Service,
+    User,
+)
 
 target_metadata = SQLModel.metadata
 

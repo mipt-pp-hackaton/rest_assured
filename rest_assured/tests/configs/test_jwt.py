@@ -1,6 +1,6 @@
-import pytest
 from rest_assured.src.configs.app.jwt import JWTConfig
-from rest_assured.src.configs.app.main import settings, env_settings, Settings
+from rest_assured.src.configs.app.main import Settings, env_settings, settings
+
 
 def test_jwt_config_loaded():
     cfg = JWTConfig(
@@ -11,6 +11,7 @@ def test_jwt_config_loaded():
     assert cfg.secret
     assert cfg.ttl_hours > 0
     assert cfg.algorithm in ("HS256", "HS384", "HS512")
+
 
 def test_jwt_env_override(monkeypatch):
     monkeypatch.setenv("DYNACONF_JWT__SECRET", "override-secret")
@@ -27,4 +28,3 @@ def test_jwt_env_override(monkeypatch):
     )
 
     assert overridden_settings.jwt.secret == "override-secret"
-

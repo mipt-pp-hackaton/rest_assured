@@ -1,10 +1,14 @@
 """Интеграционные тесты моделей Incident и NotificationLog."""
+
 from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
+
 
 @pytest.mark.asyncio
 async def test_create_incident(postgres_connection):
@@ -25,6 +29,7 @@ async def test_create_incident(postgres_connection):
     assert incident.last_error == "test error"
     assert incident.sla_breach is False
 
+
 @pytest.mark.asyncio
 async def test_unique_open_incident_per_service(postgres_connection):
     s = Service(name="svc2", url="http://example.com", interval_ms=1000)
@@ -42,6 +47,7 @@ async def test_unique_open_incident_per_service(postgres_connection):
     with pytest.raises(IntegrityError):
         await postgres_connection.commit()
     await postgres_connection.rollback()
+
 
 @pytest.mark.asyncio
 async def test_reopen_after_close(postgres_connection):
@@ -65,6 +71,7 @@ async def test_reopen_after_close(postgres_connection):
     postgres_connection.add(inc2)
     await postgres_connection.commit()
     assert inc2.id is not None
+
 
 @pytest.mark.asyncio
 async def test_notification_log_creation(postgres_connection):

@@ -28,9 +28,9 @@ async def test_stop_logs_worker_exceptions(caplog):
     await runner.stop()
 
     errors = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
-    assert any("worker raised" in m for m in errors), (
-        f"expected 'worker raised' in logs, got: {errors}"
-    )
+    assert any(
+        "worker raised" in m for m in errors
+    ), f"expected 'worker raised' in logs, got: {errors}"
 
 
 @pytest.mark.asyncio

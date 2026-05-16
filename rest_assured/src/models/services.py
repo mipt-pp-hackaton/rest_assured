@@ -2,12 +2,13 @@ import ipaddress
 import os
 import socket
 from datetime import datetime, timezone
-from pydantic import field_validator
-from sqlalchemy import CheckConstraint, Column, DateTime, JSON, String, func
-from sqlalchemy.ext.mutable import MutableList
-from sqlmodel import Field, SQLModel
 from typing import Literal, Optional
 from urllib.parse import urlparse
+
+from pydantic import field_validator
+from sqlalchemy import JSON, CheckConstraint, Column, DateTime, String, func
+from sqlalchemy.ext.mutable import MutableList
+from sqlmodel import Field, SQLModel
 
 
 def validate_public_url(url: str) -> str:
@@ -51,7 +52,9 @@ class Service(SQLModel, table=True):
     __table_args__ = (
         # Синхронизировано с Pydantic валидатором (ge=1000)
         CheckConstraint("interval_ms >= 1000", name="ck_services_interval_ms_min"),
-        CheckConstraint("sla_target_pct >= 0 AND sla_target_pct <= 100", name="ck_services_sla_range"),
+        CheckConstraint(
+            "sla_target_pct >= 0 AND sla_target_pct <= 100", name="ck_services_sla_range"
+        ),
     )
 
     model_config = {"validate_assignment": True}
@@ -76,20 +79,15 @@ class Service(SQLModel, table=True):
 
     is_active: bool = Field(default=True, index=True, description="Активен ли сервис")
 
-    sla_target_pct: float = Field(
-        default=99.0,
-        description="Целевой уровень SLA в процентах"
-    )
+    sla_target_pct: float = Field(default=99.0, description="Целевой уровень SLA в процентах")
 
     owner_emails: list[str] = Field(
         sa_column=Column(MutableList.as_mutable(JSON)),
         default_factory=list,
-        description="Список email-адресов владельцев сервиса"
+        description="Список email-адресов владельцев сервиса",
     )
     created_by: Optional[int] = Field(
-        default=None,
-        foreign_key="users.id",
-        description="ID пользователя, создавшего запись"
+        default=None, foreign_key="users.id", description="ID пользователя, создавшего запись"
     )
 
     created_at: datetime = Field(
@@ -100,11 +98,7 @@ class Service(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Дата последнего обновления",
-        sa_column=Column(
-            DateTime(timezone=True),
-            nullable=False,
-            onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=func.now()),
     )
 
     @field_validator("url")

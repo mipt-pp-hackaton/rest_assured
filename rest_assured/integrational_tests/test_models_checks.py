@@ -10,10 +10,10 @@ from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
 from rest_assured.src.models.users import User  # Убедитесь, что путь к User совпадает
 
-
 # ==========================================
 # ТЕСТЫ МОДЕЛИ USER
 # ==========================================
+
 
 @pytest.mark.asyncio
 async def test_user_round_trip(postgres_connection):
@@ -32,6 +32,7 @@ async def test_user_round_trip(postgres_connection):
 # ТЕСТЫ МОДЕЛИ SERVICE
 # ==========================================
 
+
 @pytest.mark.asyncio
 async def test_service_check_constraint_interval(postgres_connection):
     # Ограничение БД из второй модели требует interval_ms >= 100
@@ -46,6 +47,7 @@ async def test_service_check_constraint_interval(postgres_connection):
 # ==========================================
 # ТЕСТЫ МОДЕЛИ CHECKRESULT
 # ==========================================
+
 
 @pytest.mark.asyncio
 async def test_check_result_round_trip(postgres_connection):

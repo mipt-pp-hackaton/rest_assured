@@ -31,9 +31,9 @@ async def test_worker_writes_check_results(postgres_connection, httpx_mock):
     await asyncio.sleep(2.5)
     await runner.stop()
 
-    results = (await postgres_connection.exec(
-        select(CheckResult).where(CheckResult.service_id == s.id)
-    )).all()
+    results = (
+        await postgres_connection.exec(select(CheckResult).where(CheckResult.service_id == s.id))
+    ).all()
     assert len(results) >= 2
     assert all(r.is_up for r in results)
 
@@ -55,9 +55,9 @@ async def test_worker_handles_timeout(postgres_connection, httpx_mock):
     await asyncio.sleep(2.5)
     await runner.stop()
 
-    results = (await postgres_connection.exec(
-        select(CheckResult).where(CheckResult.service_id == s.id)
-    )).all()
+    results = (
+        await postgres_connection.exec(select(CheckResult).where(CheckResult.service_id == s.id))
+    ).all()
     assert len(results) >= 2
     assert all(not r.is_up for r in results)
 
@@ -77,9 +77,9 @@ async def test_worker_respects_interval(postgres_connection, httpx_mock):
     await asyncio.sleep(2.5)
     await runner.stop()
 
-    results = (await postgres_connection.exec(
-        select(CheckResult).where(CheckResult.service_id == s.id)
-    )).all()
+    results = (
+        await postgres_connection.exec(select(CheckResult).where(CheckResult.service_id == s.id))
+    ).all()
     assert len(results) >= 2
 
 
