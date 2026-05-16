@@ -38,10 +38,11 @@ def _bootstrap_db() -> Generator[None, Any, None]:
 async def postgres_connection(_bootstrap_db) -> AsyncSession:
     session = get_session()
     from sqlalchemy import text
+
     await session.exec(
         text(
-            "TRUNCATE TABLE check_results, services, "
-            "incidents, notification_log RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE check_results, services, incidents, "
+            "notification_log RESTART IDENTITY CASCADE"
         )
     )
     await session.commit()

@@ -1,11 +1,59 @@
-"""Интеграционные тесты модели CheckResult (T2.3)."""
+"""Интеграционные тесты моделей базы данных (User, Service, CheckResult)."""
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import func, text
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
+# Импорты адаптированы под вашу структуру rest_assured
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
+from rest_assured.src.models.users import User  # Убедитесь, что путь к User совпадает
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ USER
+# ==========================================
+
+
+@pytest.mark.asyncio
+async def test_user_round_trip(postgres_connection):
+    user = User(email="a@b.com", password_hash="x")
+    postgres_connection.add(user)
+    await postgres_connection.commit()
+    await postgres_connection.refresh(user)
+    assert user.id is not None
+
+    fetched = (await postgres_connection.exec(select(User).where(User.email == "a@b.com"))).first()
+    assert fetched is not None
+    assert fetched.password_hash == "x"
+
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ SERVICE
+# ==========================================
+
+
+@pytest.mark.asyncio
+async def test_service_check_constraint_interval(postgres_connection):
+    # Ограничение БД требует interval_ms >= 1000
+    # Выполняем insert напрямую, чтобы обойти Pydantic валидацию
+    from sqlalchemy import insert
+
+    stmt = insert(Service).values(
+        name="x", url="https://example.com", interval_ms=500,
+        http_method="GET", is_active=True, sla_target_pct=99.0,
+        created_at=func.now(), updated_at=func.now()
+    )
+
+    # Ожидаем ошибку нарушения целостности (Check Constraint)
+    with pytest.raises(IntegrityError):
+        await postgres_connection.exec(stmt)
+        await postgres_connection.commit()
+
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ CHECKRESULT
+# ==========================================
 
 
 @pytest.mark.asyncio

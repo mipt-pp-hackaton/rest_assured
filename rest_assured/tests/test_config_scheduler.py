@@ -6,12 +6,10 @@ from rest_assured.src.configs.app.main import settings
 def test_scheduler_config_defaults():
     """Проверяет значения по умолчанию для конфигурации планировщика."""
     assert settings.scheduler.poll_interval_seconds == 5, (
-        f"Expected poll_interval_seconds=5, "
-        f"got {settings.scheduler.poll_interval_seconds}"
+        f"Expected poll_interval_seconds=5, " f"got {settings.scheduler.poll_interval_seconds}"
     )
     assert settings.scheduler.default_timeout_ms == 5000, (
-        f"Expected default_timeout_ms=5000, "
-        f"got {settings.scheduler.default_timeout_ms}"
+        f"Expected default_timeout_ms=5000, " f"got {settings.scheduler.default_timeout_ms}"
     )
 
 

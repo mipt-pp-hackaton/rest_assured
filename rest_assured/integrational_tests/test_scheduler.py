@@ -17,6 +17,7 @@ def runner():
 @pytest.mark.asyncio
 async def test_callback_registration(runner):
     """Проверяет регистрацию callback'ов."""
+
     async def dummy_callback(result: CheckResult) -> None:
         pass
 

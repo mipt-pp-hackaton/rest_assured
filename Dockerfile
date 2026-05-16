@@ -34,7 +34,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # App sources
 COPY --chown=app:app rest_assured/ rest_assured/
-COPY --chown=app:app settings.toml.example settings.toml
+COPY --chown=app:app settings.toml settings.toml
 
 USER app
 EXPOSE 8000

@@ -6,16 +6,18 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import SQLModel
 
 from rest_assured.src.configs.app.main import settings
-from rest_assured.src.models import CheckResult, Incident, NotificationLog, Service  # noqa: F401
+from rest_assured.src.models import (  # noqa: F401
+    CheckResult,
+    Incident,
+    NotificationLog,
+    Service,
+    User,
+)
 
-target_metadata = [
-    Service.metadata,
-    CheckResult.metadata,
-    Incident.metadata,
-    NotificationLog.metadata,
-]
+target_metadata = SQLModel.metadata
 
 
 def get_url():

@@ -1,6 +1,5 @@
 """Тесты для конфигураций SMTP и уведомлений (T4.1)."""
 
-
 import pytest
 from pydantic import ValidationError
 
@@ -10,6 +9,7 @@ from rest_assured.src.configs.app.smtp import SmtpConfig
 # ----------------------------------------------------------------
 # Юнит-тесты моделей
 # ----------------------------------------------------------------
+
 
 def test_smtp_defaults():
     cfg = SmtpConfig(

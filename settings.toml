@@ -27,3 +27,8 @@ from_name = "Rest Assured Monitoring"
 enabled = true
 reminder_cooldown_minutes = 30
 include_runbook_link = false
+
+[jwt]
+secret = "change-me-in-production"
+ttl_hours = 24
+algorithm = "HS256"

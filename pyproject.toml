@@ -16,7 +16,10 @@ dependencies = [
     "asyncpg (>=0.30.0,<0.31.0)",
     "httpx (>=0.28.0,<0.29.0)",
     "aiosmtplib (>=5.1.0,<6.0.0)",
-    "jinja2 (>=3.1.6,<4.0.0)"
+    "jinja2 (>=3.1.6,<4.0.0)",
+    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
+    "bcrypt (==4.0.1)"
 ]
 
 
@@ -55,3 +58,7 @@ patch_tags = ["fix", "perf"]
 pythonpath = ["rest_assured"]
 testpaths = ["rest_assured/tests", "rest_assured/integrational_tests"]
 asyncio_mode = "auto"
+
+[tool.poetry.scripts]
+pa-server = "rest_assured.src.cli:main"
+pa-migrate = "rest_assured.src.cli:main"

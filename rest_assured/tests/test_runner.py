@@ -45,9 +45,7 @@ async def test_fire_callbacks_swallows_errors():
     await r.fire_callbacks(fake_check)
 
     assert good_called, "Good callback should have been called"
-    assert bad_called, (
-        "Bad callback should have been called (before raising)"
-    )
+    assert bad_called, "Bad callback should have been called (before raising)"
 
 
 def test_active_workers_count():

@@ -37,11 +37,11 @@ mkmigrate:
 
 migrate:
 	@echo "perform alembic migrations"
-	cd $(ROOT_PATH) && alembic upgrade heads
+	cd $(ROOT_PATH) && poetry run alembic upgrade heads
 
 mrmigrate:
 	@echo "Merge alembic heads"
-	cd $(ROOT_PATH) && alembic merge heads
+	cd $(ROOT_PATH) && poetry run alembic merge heads
 
 itest:
 	@echo "run integrational tests"
