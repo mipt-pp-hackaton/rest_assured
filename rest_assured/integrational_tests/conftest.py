@@ -41,7 +41,8 @@ async def postgres_connection(_bootstrap_db) -> AsyncSession:
 
     await session.exec(
         text(
-            "TRUNCATE TABLE check_results, services, incidents, notification_log RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE check_results, services, incidents, "
+            "notification_log RESTART IDENTITY CASCADE"
         )
     )
     await session.commit()
