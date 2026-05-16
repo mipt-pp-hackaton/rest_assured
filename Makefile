@@ -13,11 +13,11 @@ lint:
 
 run:
 	@echo "start prod server"
-	fastapi run $(ROOT_PATH)/main.py
+	poetry run fastapi run $(ROOT_PATH)/main.py
 
 dev:
 	@echo "start dev server"
-	fastapi dev $(ROOT_PATH)/main.py
+	poetry run fastapi dev $(ROOT_PATH)/main.py
 
 ddev:
 	@echo "start docker dev containers"
@@ -29,20 +29,20 @@ dprod:
 
 mkmigrate:
 	@echo "create alembic migrations $(if $(BRANCH),with label $(BRANCH),without branch label)"
-	cd $(ROOT_PATH) && python3 create_migrations.py $(if $(BRANCH),--branch-label $(BRANCH))
+	cd $(ROOT_PATH) && poetry run python3 create_migrations.py $(if $(BRANCH),--branch-label $(BRANCH))
 
 migrate:
 	@echo "perform alembic migrations"
-	cd $(ROOT_PATH) && alembic upgrade heads
+	cd $(ROOT_PATH) && poetry run alembic upgrade heads
 
 mrmigrate:
 	@echo "Merge alembic heads"
-	cd $(ROOT_PATH) && alembic merge heads
+	cd $(ROOT_PATH) && poetry run alembic merge heads
 
 itest:
 	@echo "run integrational tests"
-	pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml
+	poetry run pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml
 
 utest:
 	@echo "run unit test"
-	pytest rest_assured/tests --junitxml=unit-test-results.xml
+	poetry run pytest rest_assured/tests --junitxml=unit-test-results.xml
