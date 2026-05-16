@@ -3,7 +3,8 @@ import os
 import socket
 from datetime import datetime, timezone
 from pydantic import field_validator
-from sqlalchemy import CheckConstraint, Column, DateTime, JSON, String
+from sqlalchemy import CheckConstraint, Column, DateTime, JSON, String, func
+from sqlalchemy.ext.mutable import MutableList
 from sqlmodel import Field, SQLModel
 from typing import Literal, Optional
 from urllib.parse import urlparse
@@ -48,7 +49,8 @@ class Service(SQLModel, table=True):
     __tablename__ = "services"
 
     __table_args__ = (
-        CheckConstraint("interval_ms >= 100", name="ck_services_interval_ms_min"),
+        # Синхронизировано с Pydantic валидатором (ge=1000)
+        CheckConstraint("interval_ms >= 1000", name="ck_services_interval_ms_min"),
         CheckConstraint("sla_target_pct >= 0 AND sla_target_pct <= 100", name="ck_services_sla_range"),
     )
 
@@ -64,7 +66,7 @@ class Service(SQLModel, table=True):
     )
     interval_ms: int = Field(
         default=60000,
-        ge=1000,
+        ge=1000,  # Ограничение Pydantic теперь совпадает с CheckConstraint БД
         description="Интервал проверки в миллисекундах (минимум 1000)",
     )
     expected_status: Optional[int] = Field(
@@ -78,8 +80,9 @@ class Service(SQLModel, table=True):
         default=99.0,
         description="Целевой уровень SLA в процентах"
     )
+
     owner_emails: list[str] = Field(
-        sa_column=Column(JSON),
+        sa_column=Column(MutableList.as_mutable(JSON)),
         default_factory=list,
         description="Список email-адресов владельцев сервиса"
     )
@@ -100,7 +103,7 @@ class Service(SQLModel, table=True):
         sa_column=Column(
             DateTime(timezone=True),
             nullable=False,
-            server_onupdate=Column.server_default
+            onupdate=func.now()
         ),
     )
 
