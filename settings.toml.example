@@ -1,0 +1,29 @@
+[app_settings]
+host = "0.0.0.0"
+port = 8000
+use_testcontainers = true
+
+[db_settings]
+name = "test_db"
+user = "user"
+password = "CHANGE_ME"
+host = "postgres"
+port = 5432
+
+[scheduler]
+poll_interval_seconds = 5
+default_timeout_ms = 5000
+
+[smtp]
+host = "mailhog"
+port = 1025
+user = ""
+password = ""
+use_tls = false
+from_email = "noreply@example.com"
+from_name = "Rest Assured Monitoring"
+
+[notifications]
+enabled = true
+reminder_cooldown_minutes = 30
+include_runbook_link = false

@@ -2,6 +2,40 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-05-16)
+
+### Chores
+
+- Auto format
+  ([`2b120f7`](https://github.com/mipt-pp-hackaton/rest_assured/commit/2b120f79efe8341454aa6605faf903f6db437715))
+
+- Remove obsolete settings.toml bootstrapping from CI and add flint target to Makefile
+  ([`6b213fc`](https://github.com/mipt-pp-hackaton/rest_assured/commit/6b213fcd2696ded71ce794e2b1481255fd351369))
+
+- Track settings.toml in version control and remove example template
+  ([`6002649`](https://github.com/mipt-pp-hackaton/rest_assured/commit/6002649a4c5393cf92519f85ebd91980a496001a))
+
+### Continuous Integration
+
+- Added mailhog
+  ([`b244c57`](https://github.com/mipt-pp-hackaton/rest_assured/commit/b244c57aad4a0542179bc03c29ae698752effbb5))
+
+### Features
+
+- Implement incident and notification log models with related migrations and integration tests
+  ([`d307195`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d307195b15e1f0c1ff05f5dccbb81e01461fe77e))
+
+- Implement incident and notification models with associated database migrations and integration
+  tests
+  ([`7384bc1`](https://github.com/mipt-pp-hackaton/rest_assured/commit/7384bc1f48d07ede7664475f2cac4b92c5ea1930))
+
+- **models**: Add Incident and NotificationLog models with migration and tests
+  ([`8898990`](https://github.com/mipt-pp-hackaton/rest_assured/commit/889899069ab5fbacd67402249750254c040127db))
+
+- **notifications**: Add EmailSender with Jinja2 templates and tests
+  ([`965a750`](https://github.com/mipt-pp-hackaton/rest_assured/commit/965a7503f83738ebd248384697b507537f12ec08))
+
+
 ## v1.3.0 (2026-05-12)
 
 ### Features
