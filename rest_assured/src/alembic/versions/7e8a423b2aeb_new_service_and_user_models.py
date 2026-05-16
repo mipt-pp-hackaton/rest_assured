@@ -41,7 +41,9 @@ def upgrade() -> None:
     op.create_index(op.f("ix_services_is_active"), "services", ["is_active"], unique=False)
     op.create_foreign_key(None, "services", "users", ["created_by"], ["id"])
     op.create_check_constraint("ck_services_interval_ms_min", "services", "interval_ms >= 1000")
-    op.create_check_constraint("ck_services_sla_range", "services", "sla_target_pct >= 0 AND sla_target_pct <= 100")
+    op.create_check_constraint(
+        "ck_services_sla_range", "services", "sla_target_pct >= 0 AND sla_target_pct <= 100"
+    )
     # ### end Alembic commands ###
 
 

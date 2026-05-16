@@ -1,7 +1,7 @@
 """Интеграционные тесты моделей базы данных (User, Service, CheckResult)."""
 
 import pytest
-from sqlalchemy import text, func
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
@@ -38,7 +38,7 @@ async def test_service_check_constraint_interval(postgres_connection):
     # Ограничение БД требует interval_ms >= 1000
     # Выполняем insert напрямую, чтобы обойти Pydantic валидацию
     from sqlalchemy import insert
-    
+
     stmt = insert(Service).values(
         name="x", url="https://example.com", interval_ms=500,
         http_method="GET", is_active=True, sla_target_pct=99.0,
