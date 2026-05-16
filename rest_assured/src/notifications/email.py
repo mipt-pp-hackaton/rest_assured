@@ -62,4 +62,3 @@ class EmailSender:
         except Exception as e:
             logger.error(f"Failed to send email (kind={kind}): {e}")
             return False, f"{type(e).__name__}: {e}"
-        

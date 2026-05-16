@@ -1,7 +1,8 @@
 """Integration tests for EmailSender with Mailhog."""
 
-import pytest
 import httpx
+import pytest
+
 from rest_assured.src.configs.app.smtp import SmtpConfig
 from rest_assured.src.notifications.email import EmailSender
 

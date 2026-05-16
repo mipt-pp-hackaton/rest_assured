@@ -1,6 +1,7 @@
 """Unit tests for EmailSender template rendering."""
 
 import pytest
+
 from rest_assured.src.notifications.email import _render
 
 
