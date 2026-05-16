@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-05-16)
+
+### Chores
+
+- Prefix Makefile commands with poetry run to ensure execution within virtual environment
+  ([`018f069`](https://github.com/mipt-pp-hackaton/rest_assured/commit/018f0699fed1442ceb3406083705586e3c567e97))
+
+### Continuous Integration
+
+- Add container publishing
+  ([`445876b`](https://github.com/mipt-pp-hackaton/rest_assured/commit/445876b44dbf9c0062e025ea1f3fcdf796419925))
+
+### Features
+
+- Add service model check constraints and update migration versioning
+  ([`eac688b`](https://github.com/mipt-pp-hackaton/rest_assured/commit/eac688b3184caba6d0e2acd665fa952a362018f2))
+
+### Refactoring
+
+- Improve import sorting and formatting for service model database constraints
+  ([`41dd793`](https://github.com/mipt-pp-hackaton/rest_assured/commit/41dd793141393a226b1634b5b229e9297106b6c0))
+
+
 ## v1.4.0 (2026-05-16)
 
 ### Chores
