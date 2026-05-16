@@ -18,4 +18,4 @@ def test_jwt_env_override(monkeypatch):
     settings.clean()
     settings.execute_loaders()
 
-    assert settings.jwt.secret == "override-secret"
+    assert settings.JWT.secret == "override-secret"

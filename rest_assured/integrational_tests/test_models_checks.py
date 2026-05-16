@@ -1,12 +1,51 @@
-"""Интеграционные тесты модели CheckResult (T2.3)."""
+"""Интеграционные тесты моделей базы данных (User, Service, CheckResult)."""
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
+# Импорты адаптированы под вашу структуру rest_assured
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
+from rest_assured.src.models.users import User  # Убедитесь, что путь к User совпадает
 
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ USER
+# ==========================================
+
+@pytest.mark.asyncio
+async def test_user_round_trip(postgres_connection):
+    user = User(email="a@b.com", password_hash="x")
+    postgres_connection.add(user)
+    await postgres_connection.commit()
+    await postgres_connection.refresh(user)
+    assert user.id is not None
+
+    fetched = (await postgres_connection.exec(select(User).where(User.email == "a@b.com"))).first()
+    assert fetched is not None
+    assert fetched.password_hash == "x"
+
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ SERVICE
+# ==========================================
+
+@pytest.mark.asyncio
+async def test_service_check_constraint_interval(postgres_connection):
+    # Ограничение БД из второй модели требует interval_ms >= 100
+    s = Service(name="x", url="https://example.com", interval_ms=50)  # < 100
+    postgres_connection.add(s)
+
+    # Ожидаем ошибку нарушения целостности (Check Constraint)
+    with pytest.raises(IntegrityError):
+        await postgres_connection.commit()
+
+
+# ==========================================
+# ТЕСТЫ МОДЕЛИ CHECKRESULT
+# ==========================================
 
 @pytest.mark.asyncio
 async def test_check_result_round_trip(postgres_connection):

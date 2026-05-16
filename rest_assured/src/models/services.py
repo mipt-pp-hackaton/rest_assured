@@ -1,29 +1,21 @@
-"""Модель отслеживаемого сервиса."""
-
 import ipaddress
+import os
 import socket
 from datetime import datetime, timezone
+from pydantic import field_validator
+from sqlalchemy import CheckConstraint, Column, DateTime, JSON, String
+from sqlmodel import Field, SQLModel
 from typing import Literal, Optional
 from urllib.parse import urlparse
 
-from pydantic import field_validator
-from sqlalchemy import Column, DateTime, String
-from sqlmodel import Field, SQLModel
-
 
 def validate_public_url(url: str) -> str:
-    """Проверяет, что URL имеет http/https-схему и резолвится в публичный IP.
-
-    Защита от SSRF: запрещаются loopback, RFC-1918 private, link-local
-    (включая 169.254.169.254 cloud-metadata), multicast, reserved, unspecified.
-    """
+    """Проверяет, что URL имеет http/https-схему и резолвится в публичный IP."""
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"url scheme must be http or https, got: {parsed.scheme!r}")
     if not parsed.hostname:
         raise ValueError("url has no hostname")
-
-    import os
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
     if current_test and "test_service_url_validator" not in current_test:
@@ -54,6 +46,12 @@ class Service(SQLModel, table=True):
     """Сервис, за которым ведётся наблюдение."""
 
     __tablename__ = "services"
+
+    __table_args__ = (
+        CheckConstraint("interval_ms >= 100", name="ck_services_interval_ms_min"),
+        CheckConstraint("sla_target_pct >= 0 AND sla_target_pct <= 100", name="ck_services_sla_range"),
+    )
+
     model_config = {"validate_assignment": True}
 
     id: int | None = Field(default=None, primary_key=True)
@@ -73,11 +71,37 @@ class Service(SQLModel, table=True):
         default=None,
         description="Ожидаемый HTTP статус (если None, то 200-299 считается успехом)",
     )
-    is_active: bool = Field(default=True, description="Активен ли сервис")
+
+    is_active: bool = Field(default=True, index=True, description="Активен ли сервис")
+
+    sla_target_pct: float = Field(
+        default=99.0,
+        description="Целевой уровень SLA в процентах"
+    )
+    owner_emails: list[str] = Field(
+        sa_column=Column(JSON),
+        default_factory=list,
+        description="Список email-адресов владельцев сервиса"
+    )
+    created_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        description="ID пользователя, создавшего запись"
+    )
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Дата создания",
         sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Дата последнего обновления",
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            server_onupdate=Column.server_default
+        ),
     )
 
     @field_validator("url")
