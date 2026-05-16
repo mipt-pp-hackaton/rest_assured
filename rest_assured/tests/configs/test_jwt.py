@@ -1,12 +1,12 @@
-from dynaconf import settings
-
+import pytest
+from rest_assured.src.configs.app.jwt import JWTConfig
+from rest_assured.src.configs.app.main import settings, env_settings, Settings
 
 def test_jwt_config_loaded():
-    from rest_assured.src.configs.app.jwt import JWTConfig
     cfg = JWTConfig(
-        secret=settings.JWT.secret,
-        ttl_hours=settings.JWT.ttl_hours,
-        algorithm=settings.JWT.algorithm,
+        secret=settings.jwt.secret,
+        ttl_hours=settings.jwt.ttl_hours,
+        algorithm=settings.jwt.algorithm,
     )
     assert cfg.secret
     assert cfg.ttl_hours > 0
@@ -15,7 +15,16 @@ def test_jwt_config_loaded():
 def test_jwt_env_override(monkeypatch):
     monkeypatch.setenv("DYNACONF_JWT__SECRET", "override-secret")
 
-    settings.clean()
-    settings.execute_loaders()
+    env_settings.reload()
 
-    assert settings.JWT.secret == "override-secret"
+    overridden_settings = Settings(
+        app_settings=env_settings["app_settings"],
+        db_settings=env_settings["db_settings"],
+        scheduler=env_settings["scheduler"],
+        smtp=env_settings["smtp"],
+        notifications=env_settings["notifications"],
+        jwt=env_settings["jwt"],
+    )
+
+    assert overridden_settings.jwt.secret == "override-secret"
+
