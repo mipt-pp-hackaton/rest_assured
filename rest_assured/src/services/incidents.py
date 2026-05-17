@@ -12,7 +12,7 @@ from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
 from rest_assured.src.notifications.email import EmailSender
-from rest_assured.src.services.metrics import MetricsService
+from rest_assured.src.services.metrics import compute_sla
 
 logger = logging.getLogger(__name__)
 
@@ -112,12 +112,24 @@ async def handle_check_result(
             # OK → OK: ничего не делаем
 
             # === SLA-breach logic ===
-            metrics_service = MetricsService()
-            metrics = await metrics_service.get_metrics(check.service_id)
-            sla_pct = metrics["sla_pct"]
             target = service.sla_target_pct
             if target is None:
                 return
+
+            from datetime import timedelta
+
+            since = check.checked_at - timedelta(hours=24)
+            checks_result = await session.exec(
+                select(CheckResult)
+                .where(CheckResult.service_id == check.service_id)
+                .where(CheckResult.checked_at >= since)
+                .order_by(CheckResult.checked_at.asc())
+            )
+            checks = checks_result.all()
+            if not checks:
+                sla_pct = 100.0
+            else:
+                sla_pct = compute_sla(checks) * 100.0
 
             active_breach = await _get_open_sla_breach_incident(session, service.id)
             if sla_pct < target:
