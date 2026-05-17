@@ -115,6 +115,7 @@ async def handle_check_result(
 
 # --------------- helpers ---------------
 
+
 async def _get_open_incident(session: AsyncSession, service_id: int) -> Incident | None:
     result = await session.exec(
         select(Incident).where(

@@ -40,6 +40,7 @@ def notifications_config():
 
 async def _mailhog_total():
     import httpx
+
     async with httpx.AsyncClient() as client:
         resp = await client.get("http://localhost:8025/api/v2/messages")
         return resp.json()["total"]
@@ -225,9 +226,7 @@ async def test_fail_to_ok(postgres_connection, email_sender, notifications_confi
     await session.commit()
     await session.refresh(s)
 
-    incident = Incident(
-        service_id=s.id, opened_at=datetime.now(timezone.utc), last_error="error"
-    )
+    incident = Incident(service_id=s.id, opened_at=datetime.now(timezone.utc), last_error="error")
     session.add(incident)
     await session.commit()
     await session.refresh(incident)
@@ -295,9 +294,7 @@ async def test_ok_to_ok(postgres_connection, email_sender, notifications_config)
         notifications_config=notifications_config,
     )
 
-    incidents = (
-        await session.exec(select(Incident).where(Incident.service_id == s.id))
-    ).all()
+    incidents = (await session.exec(select(Incident).where(Incident.service_id == s.id))).all()
     assert len(incidents) == 0
     logs = (
         await session.exec(select(NotificationLog).where(NotificationLog.service_id == s.id))
