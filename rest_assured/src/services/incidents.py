@@ -81,7 +81,13 @@ async def handle_check_result(
                             },
                         )
                         await _log_notification(
-                            session, open_incident.id, service.id, "incident_reminder", ok, err, to_emails
+                            session,
+                            open_incident.id,
+                            service.id,
+                            "incident_reminder",
+                            ok,
+                            err,
+                            to_emails
                         )
             else:
                 if open_incident is not None:

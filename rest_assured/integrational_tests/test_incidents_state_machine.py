@@ -1,6 +1,5 @@
 """Integration tests for incident state machine (T4.5)."""
 
-import asyncio
 from datetime import datetime, timezone
 
 import pytest
@@ -144,9 +143,10 @@ async def test_fail_to_fail_dedup(postgres_connection, email_sender, notificatio
             select(NotificationLog).where(NotificationLog.incident_id == incident.id)
         )
     ).all()
-    opened_logs = [l for l in logs if l.kind == "incident_opened"]
+
+    opened_logs = [entry for entry in logs if entry.kind == "incident_opened"]
     assert len(opened_logs) == 1
-    reminders = [l for l in logs if l.kind == "incident_reminder"]
+    reminders = [entry for entry in logs if entry.kind == "incident_reminder"]
     assert len(reminders) == 0
 
     assert await _mailhog_total() - prev == 1
@@ -286,9 +286,17 @@ async def test_ok_to_ok(postgres_connection, email_sender, notifications_config)
         notifications_config=notifications_config,
     )
 
-    incidents = (await session.exec(select(Incident).where(Incident.service_id == s.id))).all()
+    incidents = (
+        await session.exec(
+            select(Incident).where(Incident.service_id == s.id)
+        )
+    ).all()
     assert len(incidents) == 0
-    logs = (await session.exec(select(NotificationLog).where(NotificationLog.service_id == s.id))).all()
+    logs = (
+        await session.exec(
+            select(NotificationLog).where(NotificationLog.service_id == s.id)
+        )
+    ).all()
     assert len(logs) == 0
     assert await _mailhog_total() - prev == 0
 
