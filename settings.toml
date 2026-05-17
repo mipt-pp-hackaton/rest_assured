@@ -29,6 +29,6 @@ reminder_cooldown_minutes = 30
 include_runbook_link = false
 
 [jwt]
-secret = "change-me-in-production"
-ttl_hours = 24
+secret_key = "CHANGE_ME_JWT_SECRET"
 algorithm = "HS256"
+access_token_expire_minutes = 30
