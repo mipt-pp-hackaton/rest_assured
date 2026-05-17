@@ -109,16 +109,25 @@ async def test_fail_to_fail_dedup(postgres_connection, email_sender, notificatio
     await session.commit()
     await session.refresh(s)
 
-    incident = Incident(
-        service_id=s.id, opened_at=datetime.now(timezone.utc), last_error="first error"
-    )
-    session.add(incident)
-    await session.commit()
-    await session.refresh(incident)
-
-    notifications_config.reminder_cooldown_minutes = 10
     prev = await _mailhog_total()
 
+    # Первый фейл – откроет инцидент и отправит opened
+    check_first = CheckResult(
+        service_id=s.id,
+        is_up=False,
+        http_status=500,
+        latency_ms=10,
+        checked_at=datetime.now(timezone.utc),
+        error="first error",
+    )
+    await handle_check_result(
+        check_first,
+        session_factory=lambda: session,
+        email_sender=email_sender,
+        notifications_config=notifications_config,
+    )
+
+    notifications_config.reminder_cooldown_minutes = 10
     for i in range(5):
         check = CheckResult(
             service_id=s.id,
@@ -140,7 +149,7 @@ async def test_fail_to_fail_dedup(postgres_connection, email_sender, notificatio
 
     logs = (
         await session.exec(
-            select(NotificationLog).where(NotificationLog.incident_id == incident.id)
+            select(NotificationLog).where(NotificationLog.incident_id == incidents[0].id)
         )
     ).all()
 
@@ -287,15 +296,11 @@ async def test_ok_to_ok(postgres_connection, email_sender, notifications_config)
     )
 
     incidents = (
-        await session.exec(
-            select(Incident).where(Incident.service_id == s.id)
-        )
+        await session.exec(select(Incident).where(Incident.service_id == s.id))
     ).all()
     assert len(incidents) == 0
     logs = (
-        await session.exec(
-            select(NotificationLog).where(NotificationLog.service_id == s.id)
-        )
+        await session.exec(select(NotificationLog).where(NotificationLog.service_id == s.id))
     ).all()
     assert len(logs) == 0
     assert await _mailhog_total() - prev == 0
