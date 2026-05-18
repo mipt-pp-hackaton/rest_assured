@@ -1,7 +1,7 @@
 """State machine for incident management (OK↔FAIL) with dedup and reminders."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -12,6 +12,7 @@ from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
 from rest_assured.src.notifications.email import EmailSender
+from rest_assured.src.services.metrics import compute_sla
 
 logger = logging.getLogger(__name__)
 
@@ -109,17 +110,73 @@ async def handle_check_result(
                     session, open_incident.id, service.id, "incident_closed", ok, err, to_emails
                 )
             # OK → OK: ничего не делаем
+
+        # === SLA-breach logic ===
+        target = service.sla_target_pct
+        if target is not None:
+            since = check.checked_at - timedelta(hours=24)
+            checks_result = await session.exec(
+                select(CheckResult)
+                .where(CheckResult.service_id == check.service_id)
+                .where(CheckResult.checked_at >= since)
+                .order_by(CheckResult.checked_at.asc())
+            )
+            checks = checks_result.all()
+            if not checks:
+                sla_pct = 100.0
+            else:
+                sla_pct = compute_sla(checks) * 100.0
+
+            active_breach = await _get_open_sla_breach_incident(session, service.id)
+            if sla_pct < target:
+                if active_breach is None:
+                    inc = Incident(
+                        service_id=service.id,
+                        opened_at=check.checked_at,
+                        sla_breach=True,
+                        last_error=f"SLA {sla_pct:.2f}% < target {target}%",
+                    )
+                    session.add(inc)
+                    await session.commit()
+                    await session.refresh(inc)
+                    ok, err = await email_sender.send(
+                        to=to_emails,
+                        kind="sla_breach",
+                        context={"service": service, "sla_pct": sla_pct, "target": target},
+                    )
+                    await _log_notification(
+                        session, inc.id, service.id, "sla_breach", ok, err, to_emails
+                    )
+            else:
+                if active_breach is not None:
+                    active_breach.closed_at = check.checked_at
+                    session.add(active_breach)
+                    await session.commit()
+
     except Exception:
         logger.exception("handle_check_result failed for check_id=%s", check.id)
 
 
 # --------------- helpers ---------------
 
-
 async def _get_open_incident(session: AsyncSession, service_id: int) -> Incident | None:
+    """Возвращает открытый НЕ-breach инцидент."""
     result = await session.exec(
         select(Incident).where(
             Incident.service_id == service_id,
+            Incident.closed_at.is_(None),
+            Incident.sla_breach.is_(False),
+        )
+    )
+    return result.first()
+
+
+async def _get_open_sla_breach_incident(session: AsyncSession, service_id: int) -> Incident | None:
+    """Возвращает открытый SLA-breach инцидент."""
+    result = await session.exec(
+        select(Incident).where(
+            Incident.service_id == service_id,
+            Incident.sla_breach.is_(True),
             Incident.closed_at.is_(None),
         )
     )
