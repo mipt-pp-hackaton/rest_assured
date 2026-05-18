@@ -40,9 +40,14 @@ async def test_service_check_constraint_interval(postgres_connection):
     from sqlalchemy import insert
 
     stmt = insert(Service).values(
-        name="x", url="https://example.com", interval_ms=500,
-        http_method="GET", is_active=True, sla_target_pct=99.0,
-        created_at=func.now(), updated_at=func.now()
+        name="x",
+        url="https://example.com",
+        interval_ms=500,
+        http_method="GET",
+        is_active=True,
+        sla_target_pct=99.0,
+        created_at=func.now(),
+        updated_at=func.now(),
     )
 
     # Ожидаем ошибку нарушения целостности (Check Constraint)
