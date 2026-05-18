@@ -23,6 +23,7 @@ async def handle_check_result(
     session_factory,
     email_sender: EmailSender,
     notifications_config: NotificationsConfig,
+    metrics_service=None,
 ) -> None:
     if not notifications_config.enabled:
         return
