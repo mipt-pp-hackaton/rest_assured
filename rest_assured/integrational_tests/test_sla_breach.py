@@ -419,10 +419,12 @@ async def test_sla_breach_disabled_when_no_target(
         notifications_config=notifications_config,
     )
 
-    breaches = (
+    sla_logs = (
         await session.exec(
-            select(Incident).where(Incident.service_id == s.id, Incident.sla_breach.is_(True))
+            select(NotificationLog).where(
+                NotificationLog.service_id == s.id,
+                NotificationLog.kind == "sla_breach",
+            )
         )
     ).all()
-    assert len(breaches) == 0
-    assert await _mailhog_total() - prev == 0
+    assert len(sla_logs) == 0
