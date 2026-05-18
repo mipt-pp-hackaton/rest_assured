@@ -18,7 +18,6 @@ class Settings(BaseModel):
     scheduler: SchedulerSettings
     smtp: SmtpConfig
     notifications: NotificationsConfig
-    jwt: JWTConfig
 
 
 _settings_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../"))
@@ -33,5 +32,4 @@ settings = Settings(
     scheduler=env_settings["scheduler"],
     smtp=env_settings["smtp"],
     notifications=env_settings["notifications"],
-    jwt=env_settings["jwt"],
 )
