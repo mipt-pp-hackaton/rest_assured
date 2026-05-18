@@ -403,7 +403,6 @@ async def test_sla_breach_disabled_when_no_target(
         session.add(c)
     await session.commit()
 
-    prev = await _mailhog_total()
     check = CheckResult(
         service_id=s.id,
         is_up=False,
