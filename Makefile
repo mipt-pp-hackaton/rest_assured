@@ -51,9 +51,6 @@ itest:
 	@echo "run integrational tests"
 	poetry run pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml
 
-seed:
-	\tpython -m src.scripts.seed
-
 utest:
 	@echo "run unit test"
 	poetry run pytest rest_assured/tests --junitxml=unit-test-results.xml
