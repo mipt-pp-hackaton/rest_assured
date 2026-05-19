@@ -28,6 +28,8 @@ def _bootstrap_db() -> Generator[None, Any, None]:
             settings.db_settings.password = SecretStr(postgres.password)
             settings.db_settings.host = postgres.get_container_host_ip()
         run_migrations()
+        # ASGITransport не запускает lifespan, поэтому устанавливаем session_factory вручную
+        app.state.session_factory = get_session
         yield
     finally:
         if postgres is not None:
@@ -69,3 +71,13 @@ def router_api():
 async def router_api_admin(postgres_connection):
     client = TestClient(app)
     yield client
+
+
+@pytest.fixture
+def override_auth():
+    from rest_assured.src.models.users import User
+    from rest_assured.src.services.auth.dependencies import get_current_user
+
+    app.dependency_overrides[get_current_user] = lambda: User(id=1, email="admin@example.com")
+    yield
+    app.dependency_overrides.clear()

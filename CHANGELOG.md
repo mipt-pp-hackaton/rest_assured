@@ -2,6 +2,100 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-05-19)
+
+### Bug Fixes
+
+- Lint
+  ([`725ce6f`](https://github.com/mipt-pp-hackaton/rest_assured/commit/725ce6f2bdc8a76268c0f5a12a76084e5e0ecdf1))
+
+- **T1.8**: Deduplicate JWT env vars, align field names with JWTConfig
+  ([`7928140`](https://github.com/mipt-pp-hackaton/rest_assured/commit/79281401f97424701752edd5321dc35f1e8a62bd))
+
+### Features
+
+- **T1.8**: Implement JWT auth (passwords, jwt, /api/auth/login, get_current_user)
+  ([`718ed87`](https://github.com/mipt-pp-hackaton/rest_assured/commit/718ed871d67fa73e6fe852b1fe8062fcc973e629))
+
+### Refactoring
+
+- Layered logic
+  ([`f3788a6`](https://github.com/mipt-pp-hackaton/rest_assured/commit/f3788a6d19b4175da0d1430ed67f9b5dca2e8cb2))
+
+- Move auth logic to services and clean up unused files
+  ([`10cc304`](https://github.com/mipt-pp-hackaton/rest_assured/commit/10cc304b65346df696be3857191372a20c8c9370))
+
+- Restore authentication logic in services module
+  ([`5d5b7dd`](https://github.com/mipt-pp-hackaton/rest_assured/commit/5d5b7dd8a900960c499e56603b82869f009542b4))
+
+
+## v1.8.0 (2026-05-19)
+
+### Features
+
+- **T1.7**: Add Service (Create/Update/Read) and Token schemas
+  ([`c5d9e61`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c5d9e61b8ebc1785c2a223fc926a830d5b903d04))
+
+
+## v1.7.0 (2026-05-19)
+
+### Bug Fixes
+
+- Migrations
+  ([`394d47c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/394d47cfce194205df04995eca9b271f88140368))
+
+- Module importsa
+  ([`c727b50`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c727b5002a3b5c591ce1717cf49d6f13130a0fe0))
+
+### Chores
+
+- Auto format
+  ([`014351d`](https://github.com/mipt-pp-hackaton/rest_assured/commit/014351d3709252551e2d64b656ef3dd51ee69f45))
+
+### Refactoring
+
+- Layering
+  ([`4d0e885`](https://github.com/mipt-pp-hackaton/rest_assured/commit/4d0e8858cb53026ec715a53a89dfbec45792534d))
+
+
+## v1.6.0 (2026-05-18)
+
+### Bug Fixes
+
+- Apply lint fixes
+  ([`7a74298`](https://github.com/mipt-pp-hackaton/rest_assured/commit/7a74298d3ae927601294ae2838f95850caa4f414))
+
+- Replace MetricsService with direct compute_sla call in incidents.py
+  ([`c727a82`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c727a82e0eef3b6fe0e6d0767b568f5f23cb87cb))
+
+- Update handle_check_result session handling and fix CI test failures
+  ([`48e9cd6`](https://github.com/mipt-pp-hackaton/rest_assured/commit/48e9cd6c6a7f3b82f87d5658b37e642d96de0c6b))
+
+### Chores
+
+- Auto format
+  ([`baf94c2`](https://github.com/mipt-pp-hackaton/rest_assured/commit/baf94c2b4365fe72fd98e5c29f32ed69171ed138))
+
+- Update Dockerfile to use settings.toml.example as the default configuration file
+  ([`e9c190c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/e9c190cdc9aa8c75934e6b2f33b18065042076ea))
+
+### Code Style
+
+- Fix linter warnings in T4.5 files
+  ([`d8fc2a6`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d8fc2a60ab00097f2a92c42dbff741475637a536))
+
+### Features
+
+- **incidents**: Add state machine for incident management with notifications
+  ([`dc0b28a`](https://github.com/mipt-pp-hackaton/rest_assured/commit/dc0b28a747ac87c114321575b3d42c0dae2f0d6a))
+
+- **sla**: Add SLA-breach trigger with dedup and tests
+  ([`27f8f0b`](https://github.com/mipt-pp-hackaton/rest_assured/commit/27f8f0bc4ebb07183637ba06150c6262d9b3d524))
+
+- **sla**: Add SLA-breach trigger with dedup and tests
+  ([`c2941c8`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c2941c8198560cc1459d51aaf7ac400701356183))
+
+
 ## v1.5.0 (2026-05-16)
 
 ### Chores

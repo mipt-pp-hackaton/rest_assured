@@ -16,7 +16,7 @@ async def test_on_service_changed_calls_refresh_service():
     listener.set_runner(mock_runner)
 
     # asyncpg callback signature: (connection, pid, channel, payload)
-    await listener.on_service_changed(None, 0, "service_changed", "42")
+    await listener.on_service_changed(None, 0, "service_changed", '{"id": 42}')
     mock_runner.refresh_service.assert_awaited_once_with(42)
 
 

@@ -2,22 +2,20 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 
 from rest_assured.src.api.misc import misc_router
+from rest_assured.src.api.routers.auth import auth_router
+from rest_assured.src.api.routers.incidents import router as incidents_router
+from rest_assured.src.api.routers.scheduler import router as scheduler_router
+from rest_assured.src.api.routers.services import router as services_router
+from rest_assured.src.configs.app.main import settings
+from rest_assured.src.models.checks import CheckResult
+from rest_assured.src.notifications.email import EmailSender
+from rest_assured.src.repositories.database_session import get_session
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 from rest_assured.src.scheduler.runner import SchedulerRunner
-
-try:
-    from rest_assured.src.api.auth import auth_router
-except ImportError:
-    auth_router = None
-
-try:
-    from rest_assured.src.api.services import services_router
-except ImportError:
-    services_router = None
-
+from rest_assured.src.services.incidents import handle_check_result
 from rest_assured.src.utils.version import get_app_version
 
 
@@ -29,11 +27,35 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        """Жизненный цикл приложения."""
+        # Инициализация инфраструктуры
+        email_sender = EmailSender(settings.smtp)
+        # session_factory для передачи в callback (берём из проекта)
+        session_factory = get_session
+        metrics_service = None  # пока не реализован
+
+        # Сохраняем в state, чтобы другие компоненты могли использовать
+        app.state.email_sender = email_sender
+        app.state.session_factory = session_factory
+        app.state.metrics_service = metrics_service
+
+        # Запускаем планировщик и слушатель
         await runner.start()
         await listener.start()
         app.state.runner = runner
         app.state.listener = listener
+
+        # Регистрация callback'а обработки результатов проверок (T4.7)
+        async def _check_result_callback(check: CheckResult) -> None:
+            await handle_check_result(
+                check,
+                session_factory=app.state.session_factory,
+                email_sender=app.state.email_sender,
+                metrics_service=app.state.metrics_service,
+                notifications_config=settings.notifications,
+            )
+
+        runner.register_callback(_check_result_callback)
+
         try:
             yield
         finally:
@@ -47,32 +69,10 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(misc_router)
-    if auth_router:
-        app.include_router(auth_router)
-    if services_router:
-        app.include_router(services_router)
-
-    # Placeholder routers for other epics (connected here for visibility)
-    # Epic 2: Scheduler — will be connected when ready
-    # from rest_assured.src.api.scheduler import scheduler_router
-    # app.include_router(scheduler_router)
-
-    # Epic 3: Incidents — will be connected when ready
-    # from rest_assured.src.api.incidents import incidents_router
-    # app.include_router(incidents_router)
-
-    # Epic 4: Notifications — will be connected when ready
-    # from rest_assured.src.api.notifications import notifications_router
-    # app.include_router(notifications_router)
-
-    # Epic 5: Metrics — will be connected when ready
-    # from rest_assured.src.api.metrics import metrics_router
-    # app.include_router(metrics_router)
-
-    @app.get("/api/health/scheduler")
-    async def health_scheduler(request: Request):
-        """Эндпоинт здоровья планировщика (T2.10)."""
-        return request.app.state.runner.stats
+    app.include_router(auth_router)
+    app.include_router(incidents_router)
+    app.include_router(scheduler_router)
+    app.include_router(services_router)
 
     return app
 
