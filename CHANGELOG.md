@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-05-19)
+
+### Features
+
+- **T1.10**: Add seed script and Makefile target
+  ([`418974f`](https://github.com/mipt-pp-hackaton/rest_assured/commit/418974f2cdcf8eef1bd1fc1c1ea77e787af4e618))
+
+
 ## v1.10.0 (2026-05-19)
 
 ### Bug Fixes
