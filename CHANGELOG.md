@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-05-19)
+
+### Bug Fixes
+
+- Lint
+  ([`725ce6f`](https://github.com/mipt-pp-hackaton/rest_assured/commit/725ce6f2bdc8a76268c0f5a12a76084e5e0ecdf1))
+
+- **T1.8**: Deduplicate JWT env vars, align field names with JWTConfig
+  ([`7928140`](https://github.com/mipt-pp-hackaton/rest_assured/commit/79281401f97424701752edd5321dc35f1e8a62bd))
+
+### Features
+
+- **T1.8**: Implement JWT auth (passwords, jwt, /api/auth/login, get_current_user)
+  ([`718ed87`](https://github.com/mipt-pp-hackaton/rest_assured/commit/718ed871d67fa73e6fe852b1fe8062fcc973e629))
+
+### Refactoring
+
+- Layered logic
+  ([`f3788a6`](https://github.com/mipt-pp-hackaton/rest_assured/commit/f3788a6d19b4175da0d1430ed67f9b5dca2e8cb2))
+
+- Move auth logic to services and clean up unused files
+  ([`10cc304`](https://github.com/mipt-pp-hackaton/rest_assured/commit/10cc304b65346df696be3857191372a20c8c9370))
+
+- Restore authentication logic in services module
+  ([`5d5b7dd`](https://github.com/mipt-pp-hackaton/rest_assured/commit/5d5b7dd8a900960c499e56603b82869f009542b4))
+
+
 ## v1.8.0 (2026-05-19)
 
 ### Features
