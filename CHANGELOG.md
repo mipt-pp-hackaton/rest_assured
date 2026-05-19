@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-05-19)
+
+### Features
+
+- **T1.7**: Add Service (Create/Update/Read) and Token schemas
+  ([`c5d9e61`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c5d9e61b8ebc1785c2a223fc926a830d5b903d04))
+
+
 ## v1.7.0 (2026-05-19)
 
 ### Bug Fixes
