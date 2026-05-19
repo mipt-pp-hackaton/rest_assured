@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 
 from rest_assured.src.api.misc import misc_router
+from rest_assured.src.api.routers.incidents import router as incidents_router
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.notifications.email import EmailSender
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(misc_router)
+    app.include_router(incidents_router)
 
     @app.get("/api/health/scheduler")
     async def health_scheduler(request: Request):

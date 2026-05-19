@@ -69,3 +69,13 @@ def router_api():
 async def router_api_admin(postgres_connection):
     client = TestClient(app)
     yield client
+
+
+@pytest.fixture
+def override_auth():
+    from rest_assured.src.auth.dependencies import get_current_user
+    from rest_assured.src.models.users import User
+
+    app.dependency_overrides[get_current_user] = lambda: User(id=1, email="admin@example.com")
+    yield
+    app.dependency_overrides.clear()

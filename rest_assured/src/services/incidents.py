@@ -12,9 +12,49 @@ from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
 from rest_assured.src.notifications.email import EmailSender
+from rest_assured.src.repositories.incidents import fetch_incidents
+from rest_assured.src.schemas.incidents import IncidentRead
 from rest_assured.src.services.metrics import compute_sla
 
 logger = logging.getLogger(__name__)
+
+
+async def list_incidents(
+    *,
+    session_factory,
+    service_id: int | None = None,
+    open: bool | None = None,
+    sla_breach: bool | None = None,
+    limit: int = 100,
+) -> list[IncidentRead]:
+    session = session_factory()
+    try:
+        rows = await fetch_incidents(
+            session,
+            service_id=service_id,
+            open=open,
+            sla_breach=sla_breach,
+            limit=limit,
+        )
+        return [
+            IncidentRead(
+                id=inc.id,
+                service_id=inc.service_id,
+                service_name=name,
+                opened_at=inc.opened_at,
+                closed_at=inc.closed_at,
+                last_error=inc.last_error,
+                sla_breach=inc.sla_breach,
+                duration_seconds=(
+                    int((inc.closed_at - inc.opened_at).total_seconds())
+                    if inc.closed_at
+                    else None
+                ),
+            )
+            for inc, name in rows
+        ]
+    finally:
+        await session.close()
 
 
 async def handle_check_result(
