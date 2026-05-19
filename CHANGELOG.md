@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-05-19)
+
+### Bug Fixes
+
+- Migrations
+  ([`394d47c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/394d47cfce194205df04995eca9b271f88140368))
+
+- Module importsa
+  ([`c727b50`](https://github.com/mipt-pp-hackaton/rest_assured/commit/c727b5002a3b5c591ce1717cf49d6f13130a0fe0))
+
+### Chores
+
+- Auto format
+  ([`014351d`](https://github.com/mipt-pp-hackaton/rest_assured/commit/014351d3709252551e2d64b656ef3dd51ee69f45))
+
+### Refactoring
+
+- Layering
+  ([`4d0e885`](https://github.com/mipt-pp-hackaton/rest_assured/commit/4d0e8858cb53026ec715a53a89dfbec45792534d))
+
+
 ## v1.6.0 (2026-05-18)
 
 ### Bug Fixes
