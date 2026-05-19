@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.12.0 (2026-05-19)
+
+### Features
+
+- **metrics**: Add metrics service and endpoints
+  ([`f90fb9c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/f90fb9c79cdf332fdc94338465481aaff03a555c))
+
+### Refactoring
+
+- Layer logic
+  ([`9ae613f`](https://github.com/mipt-pp-hackaton/rest_assured/commit/9ae613fd547b7f4bf16050172aaa4350db9a5636))
+
+
 ## v1.11.0 (2026-05-19)
 
 ### Features
