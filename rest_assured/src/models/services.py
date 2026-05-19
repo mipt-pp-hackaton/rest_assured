@@ -79,7 +79,9 @@ class Service(SQLModel, table=True):
 
     is_active: bool = Field(default=True, index=True, description="Активен ли сервис")
 
-    sla_target_pct: float = Field(default=99.0, description="Целевой уровень SLA в процентах")
+    sla_target_pct: Optional[float] = Field(
+        default=None, description="Целевой уровень SLA в процентах (None если не задан)"
+    )
 
     owner_emails: list[str] = Field(
         sa_column=Column(MutableList.as_mutable(JSON)),
