@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-05-19)
+
+### Bug Fixes
+
+- **T1.9**: Update listener test payload to JSON format
+  ([`645eeef`](https://github.com/mipt-pp-hackaton/rest_assured/commit/645eeefb446e18b8d6d8d9d4e06df33f6b292080))
+
+### Features
+
+- **T1.9**: Add CRUD /api/services with NOTIFY service_changed
+  ([`994dbb2`](https://github.com/mipt-pp-hackaton/rest_assured/commit/994dbb2fd54ab3fd252d90dc9897ccc7bd14cdf9))
+
+
 ## v1.9.0 (2026-05-19)
 
 ### Bug Fixes
