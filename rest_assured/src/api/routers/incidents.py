@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Request
 
-from rest_assured.src.auth.dependencies import get_current_user
 from rest_assured.src.models.users import User
 from rest_assured.src.schemas.incidents import IncidentRead
+from rest_assured.src.services.auth.dependencies import get_current_user
 from rest_assured.src.services.incidents import list_incidents
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
