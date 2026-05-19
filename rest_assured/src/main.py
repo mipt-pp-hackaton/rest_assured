@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from rest_assured.src.api.misc import misc_router
 from rest_assured.src.api.routers.auth import auth_router
 from rest_assured.src.api.routers.incidents import router as incidents_router
+from rest_assured.src.api.routers.metrics import router as metrics_router
 from rest_assured.src.api.routers.scheduler import router as scheduler_router
 from rest_assured.src.api.routers.services import router as services_router
 from rest_assured.src.configs.app.main import settings
@@ -16,6 +17,7 @@ from rest_assured.src.repositories.database_session import get_session
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 from rest_assured.src.scheduler.runner import SchedulerRunner
 from rest_assured.src.services.incidents import handle_check_result
+from rest_assured.src.services.metrics_service import MetricsService
 from rest_assured.src.utils.version import get_app_version
 
 
@@ -31,7 +33,10 @@ def create_app() -> FastAPI:
         email_sender = EmailSender(settings.smtp)
         # session_factory для передачи в callback (берём из проекта)
         session_factory = get_session
-        metrics_service = None  # пока не реализован
+        metrics_service = MetricsService(
+            session_factory,
+            cache_ttl_seconds=settings.metrics.cache_ttl_seconds,
+        )
 
         # Сохраняем в state, чтобы другие компоненты могли использовать
         app.state.email_sender = email_sender
@@ -71,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(misc_router)
     app.include_router(auth_router)
     app.include_router(incidents_router)
+    app.include_router(metrics_router)
     app.include_router(scheduler_router)
     app.include_router(services_router)
 
