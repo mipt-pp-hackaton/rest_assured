@@ -7,7 +7,12 @@ from alembic import command
 from alembic.config import Config
 
 
-async def start_server():
+def _settings_path() -> str:
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../settings.toml"))
+
+
+async def _start_server():
+    os.environ["CONFIG_PATH"] = _settings_path()
     from rest_assured.src.configs.app.main import settings
 
     config = uvicorn.Config(
@@ -20,24 +25,24 @@ async def start_server():
     await server.serve()
 
 
-def run_migrations():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, help="Path to config file")
-    args, _ = parser.parse_known_args()
-    os.environ["CONFIG_PATH"] = args.config
-
+def _run_migrations():
     base_path = os.path.dirname(__file__)
     alembic_cfg = Config(os.path.join(base_path, "alembic.ini"))
     command.upgrade(alembic_cfg, "heads")
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, help="Path to config file")
-    args = parser.parse_args()
-    os.environ["CONFIG_PATH"] = args.config
+    parser = argparse.ArgumentParser(prog="rest-assured")
+    sub = parser.add_subparsers(dest="command")
+    sub.add_parser("server", help="Start the FastAPI server")
+    sub.add_parser("migrate", help="Run pending Alembic migrations")
 
-    asyncio.run(start_server())
+    args = parser.parse_args()
+
+    if args.command == "migrate":
+        _run_migrations()
+    else:
+        asyncio.run(_start_server())
 
 
 if __name__ == "__main__":

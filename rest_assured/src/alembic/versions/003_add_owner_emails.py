@@ -8,7 +8,7 @@ Create Date: ...
 from alembic import op
 
 revision: str = "003"
-down_revision = "002"
+down_revision = "0001"
 branch_labels = None
 depends_on = None
 

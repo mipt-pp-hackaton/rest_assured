@@ -43,6 +43,10 @@ mrmigrate:
 	@echo "Merge alembic heads"
 	cd $(ROOT_PATH) && poetry run alembic merge heads
 
+seed:
+	@echo "run seed script"
+	cd $(ROOT_PATH) && python3 -m rest_assured.src.scripts.seed
+
 itest:
 	@echo "run integrational tests"
 	poetry run pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml

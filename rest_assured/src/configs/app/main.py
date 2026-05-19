@@ -1,3 +1,5 @@
+import os
+
 from dynaconf import Dynaconf
 from pydantic import BaseModel
 
@@ -12,18 +14,22 @@ from rest_assured.src.configs.app.smtp import SmtpConfig
 class Settings(BaseModel):
     db_settings: DBConfig
     app_settings: APPConfig
+    jwt: JWTConfig
     scheduler: SchedulerSettings
     smtp: SmtpConfig
     notifications: NotificationsConfig
-    jwt: JWTConfig
 
 
-env_settings = Dynaconf(settings_files=["settings.toml", "settings.yml"], env_prefix="DYNACONF")
+_settings_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../"))
+env_settings = Dynaconf(
+    settings_files=[os.path.join(_settings_root, "settings.toml")],
+    env_prefix="DYNACONF",
+)
 settings = Settings(
     app_settings=env_settings["app_settings"],
     db_settings=env_settings["db_settings"],
+    jwt=env_settings["jwt"],
     scheduler=env_settings["scheduler"],
     smtp=env_settings["smtp"],
     notifications=env_settings["notifications"],
-    jwt=env_settings["jwt"],
 )
