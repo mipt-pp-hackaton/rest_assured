@@ -55,9 +55,7 @@ async def test_list_returns_all(postgres_connection):
 async def test_create_unauthorized(postgres_connection):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.post(
-            _SERVICES_URL, json={"name": "s", "url": "http://example.com"}
-        )
+        response = await client.post(_SERVICES_URL, json={"name": "s", "url": "http://example.com"})
     assert response.status_code == 401
 
 
@@ -125,9 +123,7 @@ async def test_update_unauthorized(postgres_connection):
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.patch(
-            f"{_SERVICES_URL}{service.id}", json={"name": "hacked"}
-        )
+        response = await client.patch(f"{_SERVICES_URL}{service.id}", json={"name": "hacked"})
     assert response.status_code == 401
 
 

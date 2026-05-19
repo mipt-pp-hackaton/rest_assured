@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from rest_assured.src.models.services import Service
-from rest_assured.src.scheduler.listener import ServiceChangeListener
-from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.listener import ServiceChangeListener
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio
@@ -43,7 +43,7 @@ async def test_poll_starts_new_services_and_stops_removed(monkeypatch):
     fake_session.exec = AsyncMock(return_value=exec_result)
     fake_session.close = AsyncMock()
     monkeypatch.setattr(
-        "rest_assured.src.scheduler.listener.get_session",
+        "rest_assured.src.services.scheduler.listener.get_session",
         lambda: fake_session,
     )
 

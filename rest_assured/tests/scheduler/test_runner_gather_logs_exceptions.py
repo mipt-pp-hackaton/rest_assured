@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_stop_logs_worker_exceptions(caplog):
     await asyncio.sleep(0)
     assert task.done() and task.exception() is not None
 
-    caplog.set_level("ERROR", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("ERROR", logger="rest_assured.src.services.scheduler.runner")
     await runner.stop()
 
     errors = [r.getMessage() for r in caplog.records if r.levelname == "ERROR"]
@@ -49,7 +49,7 @@ async def test_stop_does_not_log_cancellation_as_error(caplog):
     await asyncio.sleep(0)
     runner._tasks[5] = task
 
-    caplog.set_level("ERROR", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("ERROR", logger="rest_assured.src.services.scheduler.runner")
     await runner.stop()
 
     cancellation_errors = [

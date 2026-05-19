@@ -12,7 +12,7 @@ from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
 from rest_assured.src.repositories.database_session import get_session
-from rest_assured.src.scheduler.worker import worker_loop
+from rest_assured.src.services.scheduler.worker import worker_loop
 
 logger = logging.getLogger(__name__)
 

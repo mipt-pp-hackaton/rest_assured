@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from rest_assured.src.scheduler.listener import ServiceChangeListener
-from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.listener import ServiceChangeListener
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio

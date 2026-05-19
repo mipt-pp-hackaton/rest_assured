@@ -1,6 +1,6 @@
 """T16: sanitize log helper экранирует управляющие символы и обрезает payload."""
 
-from rest_assured.src.scheduler.listener import _sanitize_log
+from rest_assured.src.services.scheduler.listener import _sanitize_log
 
 
 def test_newline_is_escaped():

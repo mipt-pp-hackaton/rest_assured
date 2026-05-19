@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import rest_assured.src.scheduler.runner as runner_mod
-from rest_assured.src.scheduler.runner import SchedulerRunner
+import rest_assured.src.services.scheduler.runner as runner_mod
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 class _FakeService:

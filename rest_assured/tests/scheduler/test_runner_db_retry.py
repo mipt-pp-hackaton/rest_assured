@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import OperationalError
 
-import rest_assured.src.scheduler.runner as runner_mod
-from rest_assured.src.scheduler.runner import SchedulerRunner
+import rest_assured.src.services.scheduler.runner as runner_mod
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_start_retries_db_and_succeeds_on_third_attempt(monkeypatch, caplo
     monkeypatch.setattr(runner_mod.asyncio, "sleep", fast_sleep)
 
     runner = SchedulerRunner()
-    caplog.set_level("WARNING", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("WARNING", logger="rest_assured.src.services.scheduler.runner")
     try:
         await runner.start()
     finally:
@@ -65,7 +65,7 @@ async def test_start_does_not_raise_when_db_unreachable(monkeypatch, caplog):
     monkeypatch.setattr(runner_mod.asyncio, "sleep", fast_sleep)
 
     runner = SchedulerRunner()
-    caplog.set_level("WARNING", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("WARNING", logger="rest_assured.src.services.scheduler.runner")
     try:
         await runner.start()  # не должно бросать
     finally:

@@ -8,8 +8,8 @@ import httpx
 import pytest
 
 from rest_assured.src.models.services import Service
-from rest_assured.src.scheduler.runner import SchedulerRunner
-from rest_assured.src.scheduler.worker import worker_loop
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.worker import worker_loop
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +40,7 @@ async def test_counters_incremented_even_when_commit_fails(monkeypatch):
     fake_session.rollback = AsyncMock()
     fake_session.close = AsyncMock()
     monkeypatch.setattr(
-        "rest_assured.src.scheduler.worker.get_session",
+        "rest_assured.src.services.scheduler.worker.get_session",
         lambda: fake_session,
     )
 
@@ -50,7 +50,7 @@ async def test_counters_incremented_even_when_commit_fails(monkeypatch):
     async def fast_sleep(delay):
         await original_sleep(min(delay, 0.01))
 
-    monkeypatch.setattr("rest_assured.src.scheduler.worker.asyncio.sleep", fast_sleep)
+    monkeypatch.setattr("rest_assured.src.services.scheduler.worker.asyncio.sleep", fast_sleep)
 
     task = asyncio.create_task(worker_loop(runner, service))
     await original_sleep(0.1)
@@ -85,7 +85,7 @@ async def test_counters_failed_increments_on_5xx(monkeypatch):
     fake_session.refresh = AsyncMock()
     fake_session.close = AsyncMock()
     monkeypatch.setattr(
-        "rest_assured.src.scheduler.worker.get_session",
+        "rest_assured.src.services.scheduler.worker.get_session",
         lambda: fake_session,
     )
 
@@ -94,7 +94,7 @@ async def test_counters_failed_increments_on_5xx(monkeypatch):
     async def fast_sleep(delay):
         await original_sleep(min(delay, 0.01))
 
-    monkeypatch.setattr("rest_assured.src.scheduler.worker.asyncio.sleep", fast_sleep)
+    monkeypatch.setattr("rest_assured.src.services.scheduler.worker.asyncio.sleep", fast_sleep)
 
     task = asyncio.create_task(worker_loop(runner, service))
     await original_sleep(0.1)

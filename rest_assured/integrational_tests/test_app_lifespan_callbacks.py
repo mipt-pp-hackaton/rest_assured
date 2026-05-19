@@ -12,9 +12,9 @@ from rest_assured.src.main import app
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.services import Service
-from rest_assured.src.notifications.email import EmailSender
-from rest_assured.src.scheduler.runner import SchedulerRunner
-from rest_assured.src.services.incidents import handle_check_result
+from rest_assured.src.services.incidents import IncidentsService
+from rest_assured.src.services.notifications.email import EmailSender
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.fixture
@@ -84,9 +84,8 @@ async def test_end_to_end_incident_email(postgres_connection, email_sender, noti
     runner = SchedulerRunner()
 
     async def _callback(chk: CheckResult) -> None:
-        await handle_check_result(
+        await IncidentsService(session).handle_check_result(
             chk,
-            session_factory=lambda: session,
             email_sender=email_sender,
             notifications_config=notifications_config,
         )

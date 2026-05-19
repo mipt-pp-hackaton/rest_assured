@@ -12,12 +12,12 @@ from rest_assured.src.api.routers.scheduler import router as scheduler_router
 from rest_assured.src.api.routers.services import router as services_router
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
-from rest_assured.src.notifications.email import EmailSender
 from rest_assured.src.repositories.database_session import get_session
-from rest_assured.src.scheduler.listener import ServiceChangeListener
-from rest_assured.src.scheduler.runner import SchedulerRunner
-from rest_assured.src.services.incidents import handle_check_result
-from rest_assured.src.services.metrics_service import MetricsService
+from rest_assured.src.services.incidents import IncidentsService
+from rest_assured.src.services.metrics_service import configure as configure_metrics_cache
+from rest_assured.src.services.notifications.email import EmailSender
+from rest_assured.src.services.scheduler.listener import ServiceChangeListener
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 from rest_assured.src.utils.version import get_app_version
 
 
@@ -29,35 +29,26 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        # Инициализация инфраструктуры
         email_sender = EmailSender(settings.smtp)
-        # session_factory для передачи в callback (берём из проекта)
-        session_factory = get_session
-        metrics_service = MetricsService(
-            session_factory,
-            cache_ttl_seconds=settings.metrics.cache_ttl_seconds,
-        )
+        configure_metrics_cache(cache_ttl_seconds=settings.metrics.cache_ttl_seconds)
 
-        # Сохраняем в state, чтобы другие компоненты могли использовать
         app.state.email_sender = email_sender
-        app.state.session_factory = session_factory
-        app.state.metrics_service = metrics_service
 
-        # Запускаем планировщик и слушатель
         await runner.start()
         await listener.start()
         app.state.runner = runner
         app.state.listener = listener
 
-        # Регистрация callback'а обработки результатов проверок (T4.7)
         async def _check_result_callback(check: CheckResult) -> None:
-            await handle_check_result(
-                check,
-                session_factory=app.state.session_factory,
-                email_sender=app.state.email_sender,
-                metrics_service=app.state.metrics_service,
-                notifications_config=settings.notifications,
-            )
+            session = get_session()
+            try:
+                await IncidentsService(session).handle_check_result(
+                    check,
+                    email_sender=app.state.email_sender,
+                    notifications_config=settings.notifications,
+                )
+            finally:
+                await session.close()
 
         runner.register_callback(_check_result_callback)
 

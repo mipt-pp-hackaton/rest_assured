@@ -13,7 +13,7 @@ from testcontainers.postgres import PostgresContainer
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.main import app
 from rest_assured.src.repositories.database_session import get_session
-from rest_assured.src.services.metrics_service import MetricsService
+from rest_assured.src.services.metrics_service import configure as configure_metrics_cache
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -29,9 +29,8 @@ def _bootstrap_db() -> Generator[None, Any, None]:
             settings.db_settings.password = SecretStr(postgres.password)
             settings.db_settings.host = postgres.get_container_host_ip()
         run_migrations()
-        # ASGITransport не запускает lifespan, поэтому инициализируем app.state вручную
-        app.state.session_factory = get_session
-        app.state.metrics_service = MetricsService(get_session, cache_ttl_seconds=0)
+        # ASGITransport не запускает lifespan, поэтому отключаем кэш метрик вручную
+        configure_metrics_cache(cache_ttl_seconds=0)
         yield
     finally:
         if postgres is not None:
@@ -50,10 +49,9 @@ async def postgres_connection(_bootstrap_db) -> AsyncSession:
         )
     )
     await session.commit()
-    # Тесты, поднимающие lifespan (TestClient), перезаписывают app.state.metrics_service
-    # экземпляром с включённым кэшем — сбрасываем его, чтобы сериальные id=1 не получали
+    # Сбрасываем кэш метрик между тестами, чтобы сериальные id=1 не получали
     # закэшированные нули от предыдущего теста.
-    app.state.metrics_service = MetricsService(get_session, cache_ttl_seconds=0)
+    configure_metrics_cache(cache_ttl_seconds=0)
     try:
         yield session
     finally:

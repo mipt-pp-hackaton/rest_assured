@@ -79,9 +79,7 @@ async def test_me_with_valid_token(postgres_connection):
         assert login_resp.status_code == 200
         token = login_resp.json()["access_token"]
 
-        me_resp = await client.get(
-            "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
-        )
+        me_resp = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert me_resp.status_code == 200
     data = me_resp.json()
@@ -100,9 +98,7 @@ async def test_me_regular_user_is_admin_false(postgres_connection):
             data={"username": "regular@example.com", "password": "pass123"},
         )
         token = login_resp.json()["access_token"]
-        me_resp = await client.get(
-            "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
-        )
+        me_resp = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert me_resp.status_code == 200
     assert me_resp.json()["is_admin"] is False

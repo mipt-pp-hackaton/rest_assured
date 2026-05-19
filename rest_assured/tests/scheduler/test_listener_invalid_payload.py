@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from rest_assured.src.scheduler.listener import ServiceChangeListener
-from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.listener import ServiceChangeListener
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio
@@ -38,7 +38,7 @@ async def test_invalid_int_payload_is_sanitized_in_logs(caplog):
     mock_runner.refresh_service = AsyncMock()
     listener.set_runner(mock_runner)
 
-    with caplog.at_level(logging.INFO, logger="rest_assured.src.scheduler.listener"):
+    with caplog.at_level(logging.INFO, logger="rest_assured.src.services.scheduler.listener"):
         await listener.on_service_changed(None, 0, "service_changed", "1\nFAKE: hacked")
 
     # В логах не должно быть голого \n из payload — должен быть экранирован.

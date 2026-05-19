@@ -10,7 +10,7 @@ from loguru import logger
 from rest_assured.src.configs.app.smtp import SmtpConfig
 
 _env = Environment(
-    loader=PackageLoader("rest_assured.src.notifications", "templates"),
+    loader=PackageLoader("rest_assured.src.services.notifications", "templates"),
     autoescape=select_autoescape(["html", "j2"]),
 )
 

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from rest_assured.src.models.services import Service
 from rest_assured.src.repositories.database_session import get_session
-from rest_assured.src.scheduler.evaluate import evaluate_response
+from rest_assured.src.services.scheduler.evaluate import evaluate_response
 
 logger = logging.getLogger(__name__)
 
