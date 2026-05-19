@@ -4,8 +4,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.auth.jwt import create_access_token
-from rest_assured.src.auth.passwords import hash_password
+from rest_assured.src.services.auth.jwt import create_access_token
+from rest_assured.src.services.auth.passwords import hash_password
 from rest_assured.src.main import app
 from rest_assured.src.models.users import User
 

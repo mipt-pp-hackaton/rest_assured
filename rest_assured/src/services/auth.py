@@ -1,4 +1,4 @@
-from rest_assured.src.auth.passwords import verify_password
+from rest_assured.src.services.auth.passwords import verify_password
 from rest_assured.src.models.users import User
 from rest_assured.src.repositories.users import get_user_by_email
 
