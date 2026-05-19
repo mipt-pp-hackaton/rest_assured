@@ -1,5 +1,6 @@
 """T14: Проверяет, что start() запускает воркер только для is_active=True (BUG fix)."""
 
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -28,16 +29,16 @@ async def test_start_spawns_only_active_services(monkeypatch):
     inactive = _FakeService(id=2, is_active=False, name="inactive_one")
 
     fake_session = MagicMock()
-    fake_session.close = AsyncMock()
     exec_result = MagicMock()
     # имитируем фильтр на стороне БД: возвращаем только активные
     exec_result.all = MagicMock(return_value=[active])
     fake_session.exec = AsyncMock(return_value=exec_result)
 
-    def fake_get_session():
-        return fake_session
+    @asynccontextmanager
+    async def fake_session_scope():
+        yield fake_session
 
-    monkeypatch.setattr(runner_mod, "get_session", fake_get_session)
+    monkeypatch.setattr(runner_mod, "session_scope", fake_session_scope)
 
     spawned: list[int] = []
 
@@ -71,7 +72,6 @@ async def test_start_uses_is_method_not_python_is(monkeypatch):
     captured: dict = {}
 
     fake_session = MagicMock()
-    fake_session.close = AsyncMock()
     exec_result = MagicMock()
     exec_result.all = MagicMock(return_value=[])
 
@@ -81,10 +81,11 @@ async def test_start_uses_is_method_not_python_is(monkeypatch):
 
     fake_session.exec = AsyncMock(side_effect=_exec_capture)
 
-    def fake_get_session():
-        return fake_session
+    @asynccontextmanager
+    async def fake_session_scope():
+        yield fake_session
 
-    monkeypatch.setattr(runner_mod, "get_session", fake_get_session)
+    monkeypatch.setattr(runner_mod, "session_scope", fake_session_scope)
 
     async def fake_worker_loop(runner_self, service):
         pass

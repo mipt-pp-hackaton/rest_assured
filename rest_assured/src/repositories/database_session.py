@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -35,3 +38,12 @@ def _get_sessionmaker():
 def get_session() -> AsyncSession:
     """Возвращает новую асинхронную сессию (не генератор)."""
     return _get_sessionmaker()()
+
+
+@asynccontextmanager
+async def session_scope() -> AsyncIterator[AsyncSession]:
+    session = get_session()
+    try:
+        yield session
+    finally:
+        await session.close()

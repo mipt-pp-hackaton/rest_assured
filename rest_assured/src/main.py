@@ -12,7 +12,7 @@ from rest_assured.src.api.routers.scheduler import router as scheduler_router
 from rest_assured.src.api.routers.services import router as services_router
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
-from rest_assured.src.repositories.database_session import get_session
+from rest_assured.src.repositories.database_session import session_scope
 from rest_assured.src.services.incidents import IncidentsService
 from rest_assured.src.services.metrics_service import configure as configure_metrics_cache
 from rest_assured.src.services.notifications.email import EmailSender
@@ -40,15 +40,12 @@ def create_app() -> FastAPI:
         app.state.listener = listener
 
         async def _check_result_callback(check: CheckResult) -> None:
-            session = get_session()
-            try:
+            async with session_scope() as session:
                 await IncidentsService(session).handle_check_result(
                     check,
                     email_sender=app.state.email_sender,
                     notifications_config=settings.notifications,
                 )
-            finally:
-                await session.close()
 
         runner.register_callback(_check_result_callback)
 

@@ -9,6 +9,7 @@ from rest_assured.src.repositories.metrics import (
     fetch_checks_for_service,
     fetch_timeseries_buckets,
 )
+from rest_assured.src.repositories.services import fetch_service
 from rest_assured.src.schemas.checks import CheckResultProtocol
 from rest_assured.src.schemas.metrics import ServiceSummaryItem, TimeseriesBucket
 from rest_assured.src.services.metrics import compute_current_uptime, compute_sla
@@ -46,7 +47,7 @@ class MetricsService:
         return uptime_seconds, sla_pct
 
     async def get_service(self, service_id: int) -> Service | None:
-        return await self._session.get(Service, service_id)
+        return await fetch_service(self._session, service_id)
 
     async def get_summary(self) -> list[ServiceSummaryItem]:
         rows = await fetch_active_services_with_last_check(self._session)

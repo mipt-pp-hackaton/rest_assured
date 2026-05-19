@@ -6,12 +6,12 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 
 import httpx
-from sqlmodel import select
 
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
-from rest_assured.src.repositories.database_session import get_session
+from rest_assured.src.repositories.database_session import session_scope
+from rest_assured.src.repositories.services import fetch_active_services, fetch_service
 from rest_assured.src.services.scheduler.worker import worker_loop
 
 logger = logging.getLogger(__name__)
@@ -66,13 +66,8 @@ class SchedulerRunner:
         services: list[Service] = []
         for attempt in range(3):
             try:
-                session = get_session()
-                try:
-                    services = (
-                        await session.exec(select(Service).where(Service.is_active.is_(True)))
-                    ).all()
-                finally:
-                    await session.close()
+                async with session_scope() as session:
+                    services = list(await fetch_active_services(session))
                 break
             except Exception as e:
                 if attempt < 2:
@@ -124,11 +119,8 @@ class SchedulerRunner:
     async def refresh_service(self, service_id: int) -> None:
         """Перезапуск воркера по service_id: stop + reread + ensure_running."""
         await self.stop_service(service_id)
-        session = get_session()
-        try:
-            service = await session.get(Service, service_id)
-        finally:
-            await session.close()
+        async with session_scope() as session:
+            service = await fetch_service(session, service_id)
         if service is not None and service.is_active:
             self.ensure_running(service)
 

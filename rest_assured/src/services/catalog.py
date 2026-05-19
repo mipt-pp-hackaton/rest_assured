@@ -1,10 +1,12 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.models.services import Service
 from rest_assured.src.repositories.services import (
+    create_service,
+    delete_service,
     fetch_all_services,
     fetch_service,
     notify_service_changed,
+    update_service,
 )
 from rest_assured.src.schemas.services import ServiceCreate, ServiceRead, ServiceUpdate
 
@@ -22,30 +24,23 @@ class CatalogService:
         return ServiceRead.model_validate(service) if service else None
 
     async def create(self, data: ServiceCreate) -> ServiceRead:
-        service = Service(**data.model_dump(exclude_unset=True))
-        self._session.add(service)
-        await self._session.commit()
-        await self._session.refresh(service)
+        service = await create_service(
+            self._session, data=data.model_dump(exclude_unset=True)
+        )
         return ServiceRead.model_validate(service)
 
     async def update(self, service_id: int, data: ServiceUpdate) -> ServiceRead | None:
-        service = await fetch_service(self._session, service_id)
+        service = await update_service(
+            self._session, service_id, updates=data.model_dump(exclude_unset=True)
+        )
         if service is None:
             return None
-        for field, value in data.model_dump(exclude_unset=True).items():
-            setattr(service, field, value)
-        self._session.add(service)
-        await self._session.commit()
-        await self._session.refresh(service)
-        result = ServiceRead.model_validate(service)
         await notify_service_changed(self._session, service_id, "upsert")
-        return result
+        return ServiceRead.model_validate(service)
 
     async def delete(self, service_id: int) -> bool:
-        service = await fetch_service(self._session, service_id)
-        if service is None:
+        found = await delete_service(self._session, service_id)
+        if not found:
             return False
-        await self._session.delete(service)
-        await self._session.commit()
         await notify_service_changed(self._session, service_id, "delete")
         return True

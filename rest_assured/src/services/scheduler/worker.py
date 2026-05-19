@@ -5,7 +5,8 @@ import logging
 from datetime import datetime, timezone
 
 from rest_assured.src.models.services import Service
-from rest_assured.src.repositories.database_session import get_session
+from rest_assured.src.repositories.checks import save_check_result
+from rest_assured.src.repositories.database_session import session_scope
 from rest_assured.src.services.scheduler.evaluate import evaluate_response
 
 logger = logging.getLogger(__name__)
@@ -45,17 +46,11 @@ async def worker_loop(runner, service: Service) -> None:
                 runner.checks_failed += 1
             runner.last_loop_at = datetime.now(timezone.utc)
 
-            # Сохранить результат в БД
-            session = get_session()
-            try:
-                session.add(check)
-                await session.commit()
-                await session.refresh(check)
-            except Exception:
-                await session.rollback()
-                log.exception("failed to persist check_result for service %s", service.id)
-            finally:
-                await session.close()
+            async with session_scope() as session:
+                try:
+                    await save_check_result(session, check)
+                except Exception:
+                    log.exception("failed to persist check_result for service %s", service.id)
 
             # Вызвать коллбэки (Эпик 4 — incidents/notifications)
             await runner.fire_callbacks(check)

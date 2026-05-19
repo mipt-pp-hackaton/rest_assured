@@ -1,7 +1,6 @@
 """T14: Public API для listener'а — active_service_ids, ensure_running, stop_service."""
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -120,10 +119,10 @@ async def test_refresh_service_restarts_when_active(monkeypatch, fake_worker):
 
     s_new = _FakeService(id=5, is_active=True, name="new")
 
-    fake_session = MagicMock()
-    fake_session.close = AsyncMock()
-    fake_session.get = AsyncMock(return_value=s_new)
-    monkeypatch.setattr(runner_mod, "get_session", lambda: fake_session)
+    async def fake_fetch_service(_session, _service_id):
+        return s_new
+
+    monkeypatch.setattr(runner_mod, "fetch_service", fake_fetch_service)
 
     await runner.refresh_service(5)
 
@@ -140,10 +139,11 @@ async def test_refresh_service_drops_when_inactive(monkeypatch, fake_worker):
     runner.ensure_running(s_old)
 
     s_after = _FakeService(id=11, is_active=False)
-    fake_session = MagicMock()
-    fake_session.close = AsyncMock()
-    fake_session.get = AsyncMock(return_value=s_after)
-    monkeypatch.setattr(runner_mod, "get_session", lambda: fake_session)
+
+    async def fake_fetch_service(_session, _service_id):
+        return s_after
+
+    monkeypatch.setattr(runner_mod, "fetch_service", fake_fetch_service)
 
     await runner.refresh_service(11)
 

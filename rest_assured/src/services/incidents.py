@@ -1,17 +1,25 @@
 """State machine for incident management (OK↔FAIL) with dedup and reminders."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rest_assured.src.configs.app.notifications import NotificationsConfig
 from rest_assured.src.models.checks import CheckResult
-from rest_assured.src.models.incidents import Incident
-from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
-from rest_assured.src.repositories.incidents import fetch_incidents
+from rest_assured.src.repositories.checks import fetch_checks_since
+from rest_assured.src.repositories.incidents import (
+    close_incident,
+    create_incident,
+    fetch_incidents,
+    find_open_incident,
+)
+from rest_assured.src.repositories.notifications import (
+    create_notification_log,
+    fetch_last_notification_at,
+)
+from rest_assured.src.repositories.services import fetch_service
 from rest_assured.src.schemas.incidents import IncidentRead
 from rest_assured.src.services.metrics import compute_sla
 from rest_assured.src.services.notifications.email import EmailSender
@@ -64,8 +72,7 @@ class IncidentsService:
         if not notifications_config.enabled:
             return
         try:
-            session = self._session
-            service = await session.get(Service, check.service_id)
+            service = await fetch_service(self._session, check.service_id)
             if service is None:
                 return
             to_emails = service.owner_emails
@@ -75,31 +82,36 @@ class IncidentsService:
                 await self._handle_sla_breach(check, service, to_emails, email_sender)
                 return
 
-            # Иначе – старая логика обычных инцидентов (sla_breach=False)
-            open_incident = await self._get_open_incident(check.service_id)
+            open_incident = await find_open_incident(
+                self._session, check.service_id, sla_breach=False
+            )
 
             if not check.is_up:
                 if open_incident is None:
-                    incident = Incident(
+                    incident = await create_incident(
+                        self._session,
                         service_id=check.service_id,
                         opened_at=check.checked_at,
-                        last_error=check.error,
                         sla_breach=False,
+                        last_error=check.error,
                     )
-                    session.add(incident)
-                    await session.commit()
-                    await session.refresh(incident)
                     ok, err = await email_sender.send(
                         to=to_emails,
                         kind="incident_opened",
                         context={"service": service, "incident": incident, "check": check},
                     )
-                    await self._log_notification(
-                        incident.id, service.id, "incident_opened", ok, err, to_emails
+                    await create_notification_log(
+                        self._session,
+                        incident_id=incident.id,
+                        service_id=service.id,
+                        kind="incident_opened",
+                        success=ok,
+                        error_msg=err,
+                        recipients=to_emails,
                     )
                 else:
-                    last_reminder = await self._last_notification_at(
-                        open_incident.id, "incident_reminder"
+                    last_reminder = await fetch_last_notification_at(
+                        self._session, open_incident.id, "incident_reminder"
                     )
                     ref_time = last_reminder if last_reminder else open_incident.opened_at
                     cooldown = notifications_config.reminder_cooldown_minutes * 60
@@ -113,26 +125,31 @@ class IncidentsService:
                                 "check": check,
                             },
                         )
-                        await self._log_notification(
-                            open_incident.id,
-                            service.id,
-                            "incident_reminder",
-                            ok,
-                            err,
-                            to_emails,
+                        await create_notification_log(
+                            self._session,
+                            incident_id=open_incident.id,
+                            service_id=service.id,
+                            kind="incident_reminder",
+                            success=ok,
+                            error_msg=err,
+                            recipients=to_emails,
                         )
             else:
                 if open_incident is not None:
-                    open_incident.closed_at = check.checked_at
-                    session.add(open_incident)
-                    await session.commit()
+                    await close_incident(self._session, open_incident, check.checked_at)
                     ok, err = await email_sender.send(
                         to=to_emails,
                         kind="incident_closed",
                         context={"service": service, "incident": open_incident, "check": check},
                     )
-                    await self._log_notification(
-                        open_incident.id, service.id, "incident_closed", ok, err, to_emails
+                    await create_notification_log(
+                        self._session,
+                        incident_id=open_incident.id,
+                        service_id=service.id,
+                        kind="incident_closed",
+                        success=ok,
+                        error_msg=err,
+                        recipients=to_emails,
                     )
 
         except Exception:
@@ -145,29 +162,22 @@ class IncidentsService:
         to_emails: list[str],
         email_sender: EmailSender,
     ) -> None:
-        session = self._session
         since = check.checked_at - timedelta(hours=24)
-        checks_result = await session.exec(
-            select(CheckResult)
-            .where(CheckResult.service_id == check.service_id)
-            .where(CheckResult.checked_at >= since)
-            .order_by(CheckResult.checked_at.asc())
-        )
-        checks = checks_result.all()
-        sla_pct = compute_sla(checks) * 100.0 if checks else 100.0
+        checks = await fetch_checks_since(self._session, check.service_id, since)
+        sla_pct = compute_sla(list(checks)) * 100.0 if checks else 100.0
 
-        active_breach = await self._get_open_sla_breach_incident(service.id)
+        active_breach = await find_open_incident(
+            self._session, service.id, sla_breach=True
+        )
         if sla_pct < service.sla_target_pct:
             if active_breach is None:
-                inc = Incident(
+                inc = await create_incident(
+                    self._session,
                     service_id=service.id,
                     opened_at=check.checked_at,
                     sla_breach=True,
                     last_error=f"SLA {sla_pct:.2f}% < target {service.sla_target_pct}%",
                 )
-                session.add(inc)
-                await session.commit()
-                await session.refresh(inc)
                 ok, err = await email_sender.send(
                     to=to_emails,
                     kind="sla_breach",
@@ -177,66 +187,15 @@ class IncidentsService:
                         "target": service.sla_target_pct,
                     },
                 )
-                await self._log_notification(
-                    inc.id, service.id, "sla_breach", ok, err, to_emails
+                await create_notification_log(
+                    self._session,
+                    incident_id=inc.id,
+                    service_id=service.id,
+                    kind="sla_breach",
+                    success=ok,
+                    error_msg=err,
+                    recipients=to_emails,
                 )
         else:
             if active_breach is not None:
-                active_breach.closed_at = check.checked_at
-                session.add(active_breach)
-                await session.commit()
-
-    async def _get_open_incident(self, service_id: int) -> Incident | None:
-        """Обычный открытый инцидент (не SLA-брешь)."""
-        result = await self._session.exec(
-            select(Incident).where(
-                Incident.service_id == service_id,
-                Incident.closed_at.is_(None),
-                Incident.sla_breach.is_(False),
-            )
-        )
-        return result.first()
-
-    async def _get_open_sla_breach_incident(self, service_id: int) -> Incident | None:
-        """Открытый SLA‑брешь инцидент."""
-        result = await self._session.exec(
-            select(Incident).where(
-                Incident.service_id == service_id,
-                Incident.sla_breach.is_(True),
-                Incident.closed_at.is_(None),
-            )
-        )
-        return result.first()
-
-    async def _last_notification_at(self, incident_id: int, kind: str) -> datetime | None:
-        result = await self._session.exec(
-            select(NotificationLog.sent_at)
-            .where(
-                NotificationLog.incident_id == incident_id,
-                NotificationLog.kind == kind,
-            )
-            .order_by(NotificationLog.sent_at.desc())
-            .limit(1)
-        )
-        return result.first()
-
-    async def _log_notification(
-        self,
-        incident_id: int,
-        service_id: int,
-        kind: str,
-        success: bool,
-        error_msg: str | None,
-        recipients: list[str],
-    ) -> None:
-        log_entry = NotificationLog(
-            incident_id=incident_id,
-            service_id=service_id,
-            kind=kind,
-            sent_at=datetime.now(timezone.utc),
-            recipients=", ".join(recipients),
-            subject="",
-            error=error_msg if not success else None,
-        )
-        self._session.add(log_entry)
-        await self._session.commit()
+                await close_incident(self._session, active_breach, check.checked_at)

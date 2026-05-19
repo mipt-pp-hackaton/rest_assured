@@ -2,11 +2,12 @@
 
 import asyncio
 import socket
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 
+import rest_assured.src.services.scheduler.worker as worker_mod
 from rest_assured.src.models.services import Service
 from rest_assured.src.services.scheduler.runner import SchedulerRunner
 from rest_assured.src.services.scheduler.worker import worker_loop
@@ -33,15 +34,11 @@ async def test_counters_incremented_even_when_commit_fails(monkeypatch):
 
     monkeypatch.setattr(runner._client, "request", _fake_request)
 
-    # mock get_session to return a session whose commit raises
-    fake_session = MagicMock()
-    fake_session.add = MagicMock()
-    fake_session.commit = AsyncMock(side_effect=Exception("DB down"))
-    fake_session.rollback = AsyncMock()
-    fake_session.close = AsyncMock()
+    # save_check_result бросает исключение — имитация падения commit'а
     monkeypatch.setattr(
-        "rest_assured.src.services.scheduler.worker.get_session",
-        lambda: fake_session,
+        worker_mod,
+        "save_check_result",
+        AsyncMock(side_effect=Exception("DB down")),
     )
 
     # patch sleep so iteration kicks off quickly
@@ -79,15 +76,7 @@ async def test_counters_failed_increments_on_5xx(monkeypatch):
 
     monkeypatch.setattr(runner._client, "request", _fake_request)
 
-    fake_session = MagicMock()
-    fake_session.add = MagicMock()
-    fake_session.commit = AsyncMock()
-    fake_session.refresh = AsyncMock()
-    fake_session.close = AsyncMock()
-    monkeypatch.setattr(
-        "rest_assured.src.services.scheduler.worker.get_session",
-        lambda: fake_session,
-    )
+    monkeypatch.setattr(worker_mod, "save_check_result", AsyncMock(return_value=None))
 
     original_sleep = asyncio.sleep
 
