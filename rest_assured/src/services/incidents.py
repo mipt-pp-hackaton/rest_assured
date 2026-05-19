@@ -46,9 +46,7 @@ async def list_incidents(
                 last_error=inc.last_error,
                 sla_breach=inc.sla_breach,
                 duration_seconds=(
-                    int((inc.closed_at - inc.opened_at).total_seconds())
-                    if inc.closed_at
-                    else None
+                    int((inc.closed_at - inc.opened_at).total_seconds()) if inc.closed_at else None
                 ),
             )
             for inc, name in rows
