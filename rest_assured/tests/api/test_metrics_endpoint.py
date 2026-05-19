@@ -1,37 +1,31 @@
 from datetime import datetime, timezone
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from rest_assured.src.api.dependencies import get_metrics_service
 from rest_assured.src.api.routers.metrics import router
 from rest_assured.src.models.services import Service
 
 
 class FakeMetricsService:
+    def __init__(self, services: dict[int, Service]) -> None:
+        self.services = services
+
+    async def get_service(self, service_id: int) -> Service | None:
+        return self.services.get(service_id)
+
     async def get_metrics(self, service_id: int) -> tuple[int, float]:
         if service_id == 3:
             return 0, 0.0
         return 42, 99.5
 
 
-class FakeSession:
-    def __init__(self, services: dict[int, Service]) -> None:
-        self.services = services
-
-    async def get(self, model: Any, item_id: int) -> Service | None:
-        return self.services.get(item_id)
-
-    async def close(self) -> None:
-        pass
-
-
 def make_app(services: dict[int, Service]) -> FastAPI:
     app = FastAPI()
-    app.state.metrics_service = FakeMetricsService()
-    app.state.session_factory = lambda: FakeSession(services)
     app.include_router(router)
+    app.dependency_overrides[get_metrics_service] = lambda: FakeMetricsService(services)
     return app
 
 

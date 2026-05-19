@@ -1,4 +1,3 @@
-from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -6,61 +5,10 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from rest_assured.src.api.dependencies import get_metrics_service
 from rest_assured.src.api.routers.metrics import router
 from rest_assured.src.models.services import Service
-
-TimeseriesRow = namedtuple(
-    "TimeseriesRow",
-    ["bucket_start", "checks_total", "checks_up", "latency_avg_ms", "latency_p95_ms"],
-)
-
-
-class FakeResult:
-    def __init__(self, rows: list[TimeseriesRow]) -> None:
-        self._rows = rows
-
-    def all(self) -> list[TimeseriesRow]:
-        return self._rows
-
-
-class FakeSession:
-    def __init__(self, service: Service | None, checks: list[dict[str, Any]]) -> None:
-        self.service = service
-        self.checks = checks
-
-    async def get(self, model: Any, item_id: int) -> Service | None:
-        return self.service
-
-    async def exec(self, statement: Any, params: dict[str, Any]) -> FakeResult:
-        bucket = params["bucket"]
-        from_ = params["from"]
-        to = params["to"]
-        grouped: dict[datetime, list[dict[str, Any]]] = {}
-        for check in self.checks:
-            checked_at = check["checked_at"]
-            if checked_at < from_ or checked_at >= to:
-                continue
-            epoch = int(checked_at.timestamp())
-            bucket_start = datetime.fromtimestamp((epoch // bucket) * bucket, tz=timezone.utc)
-            grouped.setdefault(bucket_start, []).append(check)
-
-        rows = []
-        for bucket_start in sorted(grouped):
-            bucket_checks = grouped[bucket_start]
-            latencies = [check["latency_ms"] for check in bucket_checks]
-            rows.append(
-                TimeseriesRow(
-                    bucket_start=bucket_start,
-                    checks_total=len(bucket_checks),
-                    checks_up=sum(1 for check in bucket_checks if check["is_up"]),
-                    latency_avg_ms=sum(latencies) / len(latencies),
-                    latency_p95_ms=percentile_cont(latencies, 0.95),
-                )
-            )
-        return FakeResult(rows)
-
-    async def close(self) -> None:
-        pass
+from rest_assured.src.schemas.metrics import TimeseriesBucket
 
 
 def percentile_cont(values: list[int], percentile: float) -> float:
@@ -74,10 +22,64 @@ def percentile_cont(values: list[int], percentile: float) -> float:
     return ordered[lower_index] + (ordered[upper_index] - ordered[lower_index]) * fraction
 
 
+def aggregate_buckets(
+    checks: list[dict[str, Any]],
+    from_: datetime,
+    to: datetime,
+    bucket_seconds: int,
+) -> list[TimeseriesBucket]:
+    grouped: dict[datetime, list[dict[str, Any]]] = {}
+    for check in checks:
+        checked_at = check["checked_at"]
+        if checked_at < from_ or checked_at >= to:
+            continue
+        epoch = int(checked_at.timestamp())
+        bucket_start = datetime.fromtimestamp(
+            (epoch // bucket_seconds) * bucket_seconds, tz=timezone.utc
+        )
+        grouped.setdefault(bucket_start, []).append(check)
+
+    buckets: list[TimeseriesBucket] = []
+    for bucket_start in sorted(grouped):
+        bucket_checks = grouped[bucket_start]
+        latencies = [check["latency_ms"] for check in bucket_checks]
+        checks_total = len(bucket_checks)
+        checks_up = sum(1 for check in bucket_checks if check["is_up"])
+        buckets.append(
+            TimeseriesBucket(
+                bucket_start=bucket_start,
+                checks_total=checks_total,
+                checks_up=checks_up,
+                up_ratio=checks_up / checks_total,
+                latency_avg_ms=sum(latencies) / len(latencies),
+                latency_p95_ms=percentile_cont(latencies, 0.95),
+            )
+        )
+    return buckets
+
+
+class FakeMetricsService:
+    def __init__(self, service: Service | None, checks: list[dict[str, Any]]) -> None:
+        self.service = service
+        self.checks = checks
+
+    async def get_service(self, service_id: int) -> Service | None:
+        return self.service
+
+    async def get_timeseries(
+        self,
+        service_id: int,
+        from_: datetime,
+        to: datetime,
+        bucket_seconds: int,
+    ) -> list[TimeseriesBucket]:
+        return aggregate_buckets(self.checks, from_, to, bucket_seconds)
+
+
 def make_app(service: Service | None, checks: list[dict[str, Any]]) -> FastAPI:
     app = FastAPI()
-    app.state.session_factory = lambda: FakeSession(service, checks)
     app.include_router(router)
+    app.dependency_overrides[get_metrics_service] = lambda: FakeMetricsService(service, checks)
     return app
 
 

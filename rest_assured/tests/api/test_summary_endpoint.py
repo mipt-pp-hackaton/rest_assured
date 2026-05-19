@@ -4,6 +4,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from rest_assured.src.api.dependencies import get_metrics_service
 from rest_assured.src.api.routers.metrics import router
 from rest_assured.src.schemas.metrics import ServiceSummaryItem
 
@@ -18,8 +19,8 @@ class FakeMetricsService:
 
 def make_app(rows: list[ServiceSummaryItem]) -> FastAPI:
     app = FastAPI()
-    app.state.metrics_service = FakeMetricsService(rows)
     app.include_router(router)
+    app.dependency_overrides[get_metrics_service] = lambda: FakeMetricsService(rows)
     return app
 
 
