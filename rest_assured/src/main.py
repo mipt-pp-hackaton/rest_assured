@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from rest_assured.src.api.misc import misc_router
+from rest_assured.src.api.routers.auth import auth_router
 from rest_assured.src.api.routers.incidents import router as incidents_router
 from rest_assured.src.api.routers.scheduler import router as scheduler_router
 from rest_assured.src.configs.app.main import settings
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(misc_router)
+    app.include_router(auth_router)
     app.include_router(incidents_router)
     app.include_router(scheduler_router)
 
