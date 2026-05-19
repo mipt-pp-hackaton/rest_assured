@@ -1,7 +1,6 @@
 """Слушатель уведомлений PostgreSQL для динамического обновления (T2.7)."""
 
 import asyncio
-import json
 import logging
 
 import asyncpg
@@ -97,9 +96,8 @@ class ServiceChangeListener:
         )
         if self._runner and payload:
             try:
-                data = json.loads(payload)
-                service_id = int(data["id"])
-            except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+                service_id = int(payload)
+            except (ValueError, TypeError):
                 logger.error("Invalid payload for service_changed: %s", safe_payload)
                 return
             await self._runner.refresh_service(service_id)

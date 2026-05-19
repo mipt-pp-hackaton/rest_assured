@@ -8,7 +8,7 @@ from sqlmodel import select
 # Импорты адаптированы под вашу структуру rest_assured
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
-from rest_assured.src.models.user import User
+from rest_assured.src.models.users import User
 
 # ==========================================
 # ТЕСТЫ МОДЕЛИ USER

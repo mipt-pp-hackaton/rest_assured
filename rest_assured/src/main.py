@@ -5,13 +5,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 
 from rest_assured.src.api.misc import misc_router
-from rest_assured.src.api.routers.incidents import router as incidents_router
 from rest_assured.src.configs.app.main import settings
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.notifications.email import EmailSender
 from rest_assured.src.repositories.database_session import get_session
 from rest_assured.src.scheduler.listener import ServiceChangeListener
 from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.incidents import handle_check_result
 
 try:
     from rest_assured.src.api.auth import auth_router
