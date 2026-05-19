@@ -28,6 +28,8 @@ def _bootstrap_db() -> Generator[None, Any, None]:
             settings.db_settings.password = SecretStr(postgres.password)
             settings.db_settings.host = postgres.get_container_host_ip()
         run_migrations()
+        # ASGITransport не запускает lifespan, поэтому устанавливаем session_factory вручную
+        app.state.session_factory = get_session
         yield
     finally:
         if postgres is not None:
