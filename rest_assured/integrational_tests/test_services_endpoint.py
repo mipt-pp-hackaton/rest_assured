@@ -1,22 +1,6 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.main import app
-from rest_assured.src.models.services import Service
-
-_BASE_URL = "http://test"
 _SERVICES_URL = "/api/services/"
-
-
-async def _seed_service(session: AsyncSession, **kwargs) -> Service:
-    defaults = {"name": "Test Service", "url": "http://example.com", "interval_ms": 60000}
-    defaults.update(kwargs)
-    service = Service(**defaults)
-    session.add(service)
-    await session.commit()
-    await session.refresh(service)
-    return service
 
 
 # ---------------------------------------------------------------------------
@@ -25,25 +9,20 @@ async def _seed_service(session: AsyncSession, **kwargs) -> Service:
 
 
 @pytest.mark.asyncio
-async def test_list_empty(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(_SERVICES_URL)
+async def test_list_empty(async_client):
+    response = await async_client.get(_SERVICES_URL)
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_list_returns_all(postgres_connection):
-    await _seed_service(postgres_connection, name="svc-a")
-    await _seed_service(postgres_connection, name="svc-b")
+async def test_list_returns_all(async_client, seed_service):
+    await seed_service(name="svc-a")
+    await seed_service(name="svc-b")
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(_SERVICES_URL)
+    response = await async_client.get(_SERVICES_URL)
     assert response.status_code == 200
-    names = {s["name"] for s in response.json()}
-    assert names == {"svc-a", "svc-b"}
+    assert {s["name"] for s in response.json()} == {"svc-a", "svc-b"}
 
 
 # ---------------------------------------------------------------------------
@@ -52,15 +31,15 @@ async def test_list_returns_all(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_create_unauthorized(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.post(_SERVICES_URL, json={"name": "s", "url": "http://example.com"})
+async def test_create_unauthorized(async_client):
+    response = await async_client.post(
+        _SERVICES_URL, json={"name": "s", "url": "http://example.com"}
+    )
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_create(override_auth, postgres_connection):
+async def test_create(override_auth, async_client):
     payload = {
         "name": "New Service",
         "url": "http://example.com",
@@ -69,9 +48,7 @@ async def test_create(override_auth, postgres_connection):
         "expected_status": 200,
         "is_active": True,
     }
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.post(_SERVICES_URL, json=payload)
+    response = await async_client.post(_SERVICES_URL, json=payload)
 
     assert response.status_code == 201
     data = response.json()
@@ -85,19 +62,39 @@ async def test_create(override_auth, postgres_connection):
     assert "created_at" in data
 
 
+@pytest.mark.asyncio
+async def test_create_rejects_invalid_http_method(override_auth, async_client):
+    response = await async_client.post(
+        _SERVICES_URL,
+        json={"name": "svc", "url": "http://example.com", "http_method": "FOO"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"url": "http://example.com"},  # missing name
+        {"name": "svc"},  # missing url
+        {},  # missing both
+    ],
+)
+async def test_create_rejects_missing_required_fields(override_auth, async_client, payload):
+    response = await async_client.post(_SERVICES_URL, json=payload)
+    assert response.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # GET /api/services/{id}
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_get_existing(postgres_connection):
-    service = await _seed_service(postgres_connection, name="detail-svc")
+async def test_get_existing(async_client, seed_service):
+    service = await seed_service(name="detail-svc")
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(f"{_SERVICES_URL}{service.id}")
-
+    response = await async_client.get(f"{_SERVICES_URL}{service.id}")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == service.id
@@ -105,10 +102,8 @@ async def test_get_existing(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_get_not_found(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(f"{_SERVICES_URL}99999")
+async def test_get_not_found(async_client):
+    response = await async_client.get(f"{_SERVICES_URL}99999")
     assert response.status_code == 404
 
 
@@ -118,25 +113,22 @@ async def test_get_not_found(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_update_unauthorized(postgres_connection):
-    service = await _seed_service(postgres_connection)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.patch(f"{_SERVICES_URL}{service.id}", json={"name": "hacked"})
+async def test_update_unauthorized(async_client, seed_service):
+    service = await seed_service()
+    response = await async_client.patch(
+        f"{_SERVICES_URL}{service.id}", json={"name": "hacked"}
+    )
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_update(override_auth, postgres_connection):
-    service = await _seed_service(postgres_connection, name="before")
+async def test_update(override_auth, async_client, seed_service):
+    service = await seed_service(name="before")
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.patch(
-            f"{_SERVICES_URL}{service.id}",
-            json={"name": "after", "interval_ms": 10000},
-        )
+    response = await async_client.patch(
+        f"{_SERVICES_URL}{service.id}",
+        json={"name": "after", "interval_ms": 10000},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -146,11 +138,18 @@ async def test_update(override_auth, postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_update_not_found(override_auth, postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.patch(f"{_SERVICES_URL}99999", json={"name": "x"})
+async def test_update_not_found(override_auth, async_client):
+    response = await async_client.patch(f"{_SERVICES_URL}99999", json={"name": "x"})
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_rejects_invalid_http_method(override_auth, async_client, seed_service):
+    service = await seed_service()
+    response = await async_client.patch(
+        f"{_SERVICES_URL}{service.id}", json={"http_method": "WHATEVER"}
+    )
+    assert response.status_code == 422
 
 
 # ---------------------------------------------------------------------------
@@ -159,31 +158,24 @@ async def test_update_not_found(override_auth, postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_delete_unauthorized(postgres_connection):
-    service = await _seed_service(postgres_connection)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.delete(f"{_SERVICES_URL}{service.id}")
+async def test_delete_unauthorized(async_client, seed_service):
+    service = await seed_service()
+    response = await async_client.delete(f"{_SERVICES_URL}{service.id}")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_delete(override_auth, postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_delete(override_auth, async_client, seed_service):
+    service = await seed_service()
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        delete_response = await client.delete(f"{_SERVICES_URL}{service.id}")
-        assert delete_response.status_code == 204
+    delete_response = await async_client.delete(f"{_SERVICES_URL}{service.id}")
+    assert delete_response.status_code == 204
 
-        get_response = await client.get(f"{_SERVICES_URL}{service.id}")
-        assert get_response.status_code == 404
+    get_response = await async_client.get(f"{_SERVICES_URL}{service.id}")
+    assert get_response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_delete_not_found(override_auth, postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.delete(f"{_SERVICES_URL}99999")
+async def test_delete_not_found(override_auth, async_client):
+    response = await async_client.delete(f"{_SERVICES_URL}99999")
     assert response.status_code == 404

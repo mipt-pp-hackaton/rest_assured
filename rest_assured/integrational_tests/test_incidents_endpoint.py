@@ -1,78 +1,69 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+import pytest_asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.main import app
 from rest_assured.src.models.incidents import Incident
-from rest_assured.src.models.services import Service
 
 
-async def _seed_incidents(session: AsyncSession) -> list[Incident]:
-    service = Service(name="svc1", url="http://example.com", interval_ms=1000)
-    session.add(service)
-    await session.commit()
-    await session.refresh(service)
+@pytest_asyncio.fixture
+async def seed_three_incidents(
+    seed_service, postgres_connection: AsyncSession
+) -> list[Incident]:
+    """Сидит сервис и 3 инцидента: открытый, закрытый, SLA-breach (закрытый)."""
+    service = await seed_service(name="svc1")
 
-    inc1 = Incident(
-        service_id=service.id,
-        opened_at=datetime.now(timezone.utc) - timedelta(hours=2),
-        closed_at=None,
-        sla_breach=False,
-        last_error="err1",
-    )
-    inc2 = Incident(
-        service_id=service.id,
-        opened_at=datetime.now(timezone.utc) - timedelta(hours=5),
-        closed_at=datetime.now(timezone.utc) - timedelta(hours=3),
-        sla_breach=False,
-        last_error="err2",
-    )
-    inc3 = Incident(
-        service_id=service.id,
-        opened_at=datetime.now(timezone.utc) - timedelta(hours=10),
-        closed_at=datetime.now(timezone.utc) - timedelta(hours=8),
-        sla_breach=True,
-        last_error="err3",
-    )
-    session.add_all([inc1, inc2, inc3])
-    await session.commit()
-    return [inc1, inc2, inc3]
+    now = datetime.now(timezone.utc)
+    incidents = [
+        Incident(
+            service_id=service.id,
+            opened_at=now - timedelta(hours=2),
+            closed_at=None,
+            sla_breach=False,
+            last_error="err1",
+        ),
+        Incident(
+            service_id=service.id,
+            opened_at=now - timedelta(hours=5),
+            closed_at=now - timedelta(hours=3),
+            sla_breach=False,
+            last_error="err2",
+        ),
+        Incident(
+            service_id=service.id,
+            opened_at=now - timedelta(hours=10),
+            closed_at=now - timedelta(hours=8),
+            sla_breach=True,
+            last_error="err3",
+        ),
+    ]
+    postgres_connection.add_all(incidents)
+    await postgres_connection.commit()
+    for inc in incidents:
+        await postgres_connection.refresh(inc)
+    return incidents
 
 
 @pytest.mark.asyncio
-async def test_unauthorized(postgres_connection):
-    # Проверяем, что без JWT возвращается 401
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/incidents")
+async def test_unauthorized(async_client):
+    response = await async_client.get("/api/incidents")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_list_all(override_auth, postgres_connection):
-    session = postgres_connection
-    await _seed_incidents(session)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/incidents")
+async def test_list_all(override_auth, async_client, seed_three_incidents):
+    response = await async_client.get("/api/incidents")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    # Проверка сортировки: первый в списке должен иметь самое позднее opened_at
+    # Сортировка: первым идёт инцидент с самым свежим opened_at
     assert data[0]["opened_at"] > data[1]["opened_at"]
 
 
 @pytest.mark.asyncio
-async def test_filter_open(override_auth, postgres_connection):
-    session = postgres_connection
-    await _seed_incidents(session)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/incidents?open=true")
+async def test_filter_open_true(override_auth, async_client, seed_three_incidents):
+    response = await async_client.get("/api/incidents?open=true")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -80,15 +71,22 @@ async def test_filter_open(override_auth, postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_filter_service_and_open(override_auth, postgres_connection):
-    session = postgres_connection
-    await _seed_incidents(session)
-    # id сервиса мы знаем: это первый созданный, с id=1
-    service_id = 1
+async def test_filter_open_false(override_auth, async_client, seed_three_incidents):
+    """Граничный кейс: open=false вернёт только закрытые инциденты."""
+    response = await async_client.get("/api/incidents?open=false")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert all(item["closed_at"] is not None for item in data)
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get(f"/api/incidents?service_id={service_id}&open=true")
+
+@pytest.mark.asyncio
+async def test_filter_service_and_open(override_auth, async_client, seed_three_incidents):
+    service_id = seed_three_incidents[0].service_id
+
+    response = await async_client.get(
+        f"/api/incidents?service_id={service_id}&open=true"
+    )
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -96,13 +94,8 @@ async def test_filter_service_and_open(override_auth, postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_filter_sla_breach(override_auth, postgres_connection):
-    session = postgres_connection
-    await _seed_incidents(session)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/incidents?sla_breach=true")
+async def test_filter_sla_breach(override_auth, async_client, seed_three_incidents):
+    response = await async_client.get("/api/incidents?sla_breach=true")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -110,16 +103,10 @@ async def test_filter_sla_breach(override_auth, postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_duration_seconds(override_auth, postgres_connection):
-    session = postgres_connection
-    await _seed_incidents(session)
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/incidents")
+async def test_duration_seconds(override_auth, async_client, seed_three_incidents):
+    response = await async_client.get("/api/incidents")
     assert response.status_code == 200
-    data = response.json()
-    for inc in data:
+    for inc in response.json():
         if inc["closed_at"] is None:
             assert inc["duration_seconds"] is None
         else:
@@ -130,3 +117,19 @@ async def test_duration_seconds(override_auth, postgres_connection):
                 ).total_seconds()
             )
             assert inc["duration_seconds"] == expected
+
+
+@pytest.mark.asyncio
+async def test_limit_caps_result_count(override_auth, async_client, seed_three_incidents):
+    """Граница: limit=1 возвращает максимум 1 инцидент."""
+    response = await async_client.get("/api/incidents?limit=1")
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("limit", [0, -1, 501, 1000])
+async def test_limit_out_of_range_returns_422(override_auth, async_client, limit):
+    """Граница: limit вне [1, 500] → 422 от FastAPI Query валидации."""
+    response = await async_client.get(f"/api/incidents?limit={limit}")
+    assert response.status_code == 422
