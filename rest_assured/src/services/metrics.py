@@ -1,13 +1,7 @@
-from datetime import datetime
-from typing import Protocol
+from rest_assured.src.schemas.checks import CheckResultProtocol
 
 
-class CheckResult(Protocol):
-    checked_at: datetime
-    is_up: bool
-
-
-def compute_current_uptime(checks: list[CheckResult]) -> int:
+def compute_current_uptime(checks: list[CheckResultProtocol]) -> int:
     """Текущий uptime в секундах от последнего фейла до последней проверки."""
     if not checks:
         return 0
@@ -29,7 +23,7 @@ def compute_current_uptime(checks: list[CheckResult]) -> int:
     return current_uptime
 
 
-def compute_sla(checks: list[CheckResult]) -> float:
+def compute_sla(checks: list[CheckResultProtocol]) -> float:
     if not checks:
         return 0.0
     if len(checks) == 1:

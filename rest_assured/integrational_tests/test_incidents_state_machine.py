@@ -11,8 +11,8 @@ from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
-from rest_assured.src.notifications.email import EmailSender
-from rest_assured.src.services.incidents import handle_check_result
+from rest_assured.src.services.incidents import IncidentsService
+from rest_assured.src.services.notifications.email import EmailSender
 
 
 @pytest.fixture
@@ -71,9 +71,8 @@ async def test_ok_to_fail(postgres_connection, email_sender, notifications_confi
     await session.commit()
 
     prev = await _mailhog_total()
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -121,9 +120,8 @@ async def test_fail_to_fail_dedup(postgres_connection, email_sender, notificatio
         checked_at=datetime.now(timezone.utc),
         error="first error",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check_first,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -138,9 +136,8 @@ async def test_fail_to_fail_dedup(postgres_connection, email_sender, notificatio
             checked_at=datetime.now(timezone.utc),
             error=f"error {i}",
         )
-        await handle_check_result(
+        await IncidentsService(session).handle_check_result(
             check,
-            session_factory=lambda: session,
             email_sender=email_sender,
             notifications_config=notifications_config,
         )
@@ -193,9 +190,8 @@ async def test_fail_to_fail_reminder(postgres_connection, email_sender, notifica
         checked_at=datetime.now(timezone.utc),
         error="second error",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -241,9 +237,8 @@ async def test_fail_to_ok(postgres_connection, email_sender, notifications_confi
         checked_at=datetime.now(timezone.utc),
         error=None,
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -287,9 +282,8 @@ async def test_ok_to_ok(postgres_connection, email_sender, notifications_config)
         checked_at=datetime.now(timezone.utc),
         error=None,
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -331,9 +325,8 @@ async def test_smtp_failure_incident_still_created(
         checked_at=datetime.now(timezone.utc),
         error="error",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )

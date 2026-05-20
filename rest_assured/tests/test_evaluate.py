@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from rest_assured.src.models.services import Service
-from rest_assured.src.scheduler.evaluate import evaluate_response
+from rest_assured.src.services.scheduler.evaluate import evaluate_response
 
 
 def create_test_service(expected_status=None):

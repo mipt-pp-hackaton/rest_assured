@@ -11,8 +11,8 @@ from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.notifications import NotificationLog
 from rest_assured.src.models.services import Service
-from rest_assured.src.notifications.email import EmailSender
-from rest_assured.src.services.incidents import handle_check_result
+from rest_assured.src.services.incidents import IncidentsService
+from rest_assured.src.services.notifications.email import EmailSender
 
 
 @pytest.fixture
@@ -80,9 +80,8 @@ async def test_no_breach_when_sla_ok(postgres_connection, email_sender, notifica
         latency_ms=10,
         checked_at=datetime.now(timezone.utc),
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -134,9 +133,8 @@ async def test_sla_drops_creates_breach(postgres_connection, email_sender, notif
         checked_at=datetime.now(timezone.utc),
         error="error",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -201,9 +199,8 @@ async def test_breach_not_repeated(postgres_connection, email_sender, notificati
         checked_at=datetime.now(timezone.utc),
         error="err",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check1,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -219,9 +216,8 @@ async def test_breach_not_repeated(postgres_connection, email_sender, notificati
             checked_at=datetime.now(timezone.utc),
             error="err",
         )
-        await handle_check_result(
+        await IncidentsService(session).handle_check_result(
             check,
-            session_factory=lambda: session,
             email_sender=email_sender,
             notifications_config=notifications_config,
         )
@@ -292,9 +288,8 @@ async def test_breach_closes_when_sla_recovers(
         latency_ms=10,
         checked_at=datetime.now(timezone.utc),
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -352,9 +347,8 @@ async def test_new_breach_after_recovery(postgres_connection, email_sender, noti
         checked_at=datetime.now(timezone.utc),
         error="err",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )
@@ -411,9 +405,8 @@ async def test_sla_breach_disabled_when_no_target(
         checked_at=datetime.now(timezone.utc),
         error="err",
     )
-    await handle_check_result(
+    await IncidentsService(session).handle_check_result(
         check,
-        session_factory=lambda: session,
         email_sender=email_sender,
         notifications_config=notifications_config,
     )

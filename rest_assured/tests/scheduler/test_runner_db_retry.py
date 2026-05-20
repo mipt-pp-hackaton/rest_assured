@@ -3,13 +3,14 @@
 3×1с retry, после неуспеха — warning + пустые воркеры.
 """
 
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.exc import OperationalError
 
-import rest_assured.src.scheduler.runner as runner_mod
-from rest_assured.src.scheduler.runner import SchedulerRunner
+import rest_assured.src.services.scheduler.runner as runner_mod
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 
 @pytest.mark.asyncio
@@ -17,18 +18,18 @@ async def test_start_retries_db_and_succeeds_on_third_attempt(monkeypatch, caplo
     """Первые 2 попытки кидают OperationalError, 3-я возвращает реальную сессию-мок."""
     attempts = {"n": 0}
     success_session = MagicMock()
-    success_session.close = AsyncMock()
     exec_result = MagicMock()
     exec_result.all = MagicMock(return_value=[])
     success_session.exec = AsyncMock(return_value=exec_result)
 
-    def fake_get_session():
+    @asynccontextmanager
+    async def fake_session_scope():
         attempts["n"] += 1
         if attempts["n"] <= 2:
             raise OperationalError("SELECT 1", {}, Exception("connect failed"))
-        return success_session
+        yield success_session
 
-    monkeypatch.setattr(runner_mod, "get_session", fake_get_session)
+    monkeypatch.setattr(runner_mod, "session_scope", fake_session_scope)
 
     # Ускорим тест: подменим asyncio.sleep на noop в модуле runner.
     async def fast_sleep(_):
@@ -37,7 +38,7 @@ async def test_start_retries_db_and_succeeds_on_third_attempt(monkeypatch, caplo
     monkeypatch.setattr(runner_mod.asyncio, "sleep", fast_sleep)
 
     runner = SchedulerRunner()
-    caplog.set_level("WARNING", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("WARNING", logger="rest_assured.src.services.scheduler.runner")
     try:
         await runner.start()
     finally:
@@ -54,10 +55,12 @@ async def test_start_retries_db_and_succeeds_on_third_attempt(monkeypatch, caplo
 async def test_start_does_not_raise_when_db_unreachable(monkeypatch, caplog):
     """После 3 неуспешных попыток start() не падает, а лишь логирует warning."""
 
-    def failing_get_session():
+    @asynccontextmanager
+    async def failing_session_scope():
         raise OperationalError("SELECT 1", {}, Exception("connect failed"))
+        yield  # noqa: unreachable
 
-    monkeypatch.setattr(runner_mod, "get_session", failing_get_session)
+    monkeypatch.setattr(runner_mod, "session_scope", failing_session_scope)
 
     async def fast_sleep(_):
         return None
@@ -65,7 +68,7 @@ async def test_start_does_not_raise_when_db_unreachable(monkeypatch, caplog):
     monkeypatch.setattr(runner_mod.asyncio, "sleep", fast_sleep)
 
     runner = SchedulerRunner()
-    caplog.set_level("WARNING", logger="rest_assured.src.scheduler.runner")
+    caplog.set_level("WARNING", logger="rest_assured.src.services.scheduler.runner")
     try:
         await runner.start()  # не должно бросать
     finally:

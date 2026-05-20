@@ -1,24 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.main import app
 from rest_assured.src.models.checks import CheckResult
-from rest_assured.src.models.services import Service
 
 _BASE_URL = "http://test"
-
-
-async def _seed_service(session: AsyncSession, **kwargs) -> Service:
-    defaults = {"name": "metrics-svc", "url": "http://example.com", "interval_ms": 60000}
-    defaults.update(kwargs)
-    service = Service(**defaults)
-    session.add(service)
-    await session.commit()
-    await session.refresh(service)
-    return service
 
 
 async def _seed_checks(
@@ -48,21 +35,17 @@ async def _seed_checks(
 
 
 @pytest.mark.asyncio
-async def test_metrics_returns_404_for_missing_service(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get("/api/services/99999/metrics")
+async def test_metrics_returns_404_for_missing_service(async_client):
+    response = await async_client.get("/api/services/99999/metrics")
     assert response.status_code == 404
     assert response.json()["detail"] == "service not found"
 
 
 @pytest.mark.asyncio
-async def test_metrics_zero_for_service_without_checks(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_metrics_zero_for_service_without_checks(async_client, seed_service):
+    service = await seed_service()
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(f"/api/services/{service.id}/metrics")
+    response = await async_client.get(f"/api/services/{service.id}/metrics")
 
     assert response.status_code == 200
     data = response.json()
@@ -73,9 +56,9 @@ async def test_metrics_zero_for_service_without_checks(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_metrics_matches_sber_example(postgres_connection):
+async def test_metrics_matches_sber_example(async_client, seed_service, postgres_connection):
     """SBER reference series: 7 checks, current uptime = 10s, SLA = 50%."""
-    service = await _seed_service(postgres_connection)
+    service = await seed_service()
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     await _seed_checks(
         postgres_connection,
@@ -84,9 +67,7 @@ async def test_metrics_matches_sber_example(postgres_connection):
         base=base,
     )
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(f"/api/services/{service.id}/metrics")
+    response = await async_client.get(f"/api/services/{service.id}/metrics")
 
     assert response.status_code == 200
     data = response.json()
@@ -100,22 +81,18 @@ async def test_metrics_matches_sber_example(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_summary_empty_when_no_services(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get("/api/services/summary")
+async def test_summary_empty_when_no_services(async_client):
+    response = await async_client.get("/api/services/summary")
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_summary_excludes_inactive_services(postgres_connection):
-    await _seed_service(postgres_connection, name="active", is_active=True)
-    await _seed_service(postgres_connection, name="inactive", is_active=False)
+async def test_summary_excludes_inactive_services(async_client, seed_service):
+    await seed_service(name="active", is_active=True)
+    await seed_service(name="inactive", is_active=False)
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get("/api/services/summary")
+    response = await async_client.get("/api/services/summary")
 
     assert response.status_code == 200
     names = [row["name"] for row in response.json()]
@@ -123,8 +100,10 @@ async def test_summary_excludes_inactive_services(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_summary_reports_last_check_and_metrics(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_summary_reports_last_check_and_metrics(
+    async_client, seed_service, postgres_connection
+):
+    service = await seed_service()
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     await _seed_checks(
         postgres_connection,
@@ -133,9 +112,7 @@ async def test_summary_reports_last_check_and_metrics(postgres_connection):
         base=base,
     )
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get("/api/services/summary")
+    response = await async_client.get("/api/services/summary")
 
     assert response.status_code == 200
     rows = response.json()
@@ -154,39 +131,31 @@ async def test_summary_reports_last_check_and_metrics(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_timeseries_returns_404_for_missing_service(postgres_connection):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            "/api/services/99999/timeseries",
-            params={
-                "from": "2026-01-01T12:00:00Z",
-                "to": "2026-01-01T13:00:00Z",
-            },
-        )
+async def test_timeseries_returns_404_for_missing_service(async_client):
+    response = await async_client.get(
+        "/api/services/99999/timeseries",
+        params={"from": "2026-01-01T12:00:00Z", "to": "2026-01-01T13:00:00Z"},
+    )
     assert response.status_code == 404
     assert response.json()["detail"] == "service not found"
 
 
 @pytest.mark.asyncio
-async def test_timeseries_returns_422_when_to_not_after_from(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_timeseries_returns_422_when_to_not_after_from(async_client, seed_service):
+    service = await seed_service()
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            f"/api/services/{service.id}/timeseries",
-            params={
-                "from": "2026-01-01T12:00:00Z",
-                "to": "2026-01-01T12:00:00Z",
-            },
-        )
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={"from": "2026-01-01T12:00:00Z", "to": "2026-01-01T12:00:00Z"},
+    )
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_timeseries_empty_when_range_has_no_checks(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_timeseries_empty_when_range_has_no_checks(
+    async_client, seed_service, postgres_connection
+):
+    service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     await _seed_checks(
         postgres_connection,
@@ -195,37 +164,32 @@ async def test_timeseries_empty_when_range_has_no_checks(postgres_connection):
         base=base,
     )
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            f"/api/services/{service.id}/timeseries",
-            params={
-                "from": "2026-01-01T13:00:00Z",
-                "to": "2026-01-01T14:00:00Z",
-            },
-        )
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={"from": "2026-01-01T13:00:00Z", "to": "2026-01-01T14:00:00Z"},
+    )
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_timeseries_groups_checks_into_buckets(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_timeseries_groups_checks_into_buckets(
+    async_client, seed_service, postgres_connection
+):
+    service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     # 60 all-up checks at 1s intervals → 6 buckets of 10s, 10 checks each
     points = [(i, True) for i in range(60)]
     await _seed_checks(postgres_connection, service.id, points, base=base, latency_ms=100)
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            f"/api/services/{service.id}/timeseries",
-            params={
-                "from": "2026-01-01T12:00:00Z",
-                "to": "2026-01-01T12:01:00Z",
-                "bucket_seconds": 10,
-            },
-        )
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={
+            "from": "2026-01-01T12:00:00Z",
+            "to": "2026-01-01T12:01:00Z",
+            "bucket_seconds": 10,
+        },
+    )
 
     assert response.status_code == 200
     buckets = response.json()
@@ -243,24 +207,24 @@ async def test_timeseries_groups_checks_into_buckets(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_timeseries_counts_down_checks_per_bucket(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_timeseries_counts_down_checks_per_bucket(
+    async_client, seed_service, postgres_connection
+):
+    service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     # First bucket: 7 up + 3 down; second bucket: all up
     bucket_a = [(i, True) for i in range(7)] + [(i, False) for i in range(7, 10)]
     bucket_b = [(i, True) for i in range(10, 20)]
     await _seed_checks(postgres_connection, service.id, bucket_a + bucket_b, base=base)
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            f"/api/services/{service.id}/timeseries",
-            params={
-                "from": "2026-01-01T12:00:00Z",
-                "to": "2026-01-01T12:00:20Z",
-                "bucket_seconds": 10,
-            },
-        )
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={
+            "from": "2026-01-01T12:00:00Z",
+            "to": "2026-01-01T12:00:20Z",
+            "bucket_seconds": 10,
+        },
+    )
 
     assert response.status_code == 200
     buckets = response.json()
@@ -273,8 +237,8 @@ async def test_timeseries_counts_down_checks_per_bucket(postgres_connection):
 
 
 @pytest.mark.asyncio
-async def test_timeseries_computes_p95_latency(postgres_connection):
-    service = await _seed_service(postgres_connection)
+async def test_timeseries_computes_p95_latency(async_client, seed_service, postgres_connection):
+    service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     # 10 checks with latency_ms = 0..9
     for i in range(10):
@@ -289,16 +253,14 @@ async def test_timeseries_computes_p95_latency(postgres_connection):
         )
     await postgres_connection.commit()
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=_BASE_URL) as client:
-        response = await client.get(
-            f"/api/services/{service.id}/timeseries",
-            params={
-                "from": "2026-01-01T12:00:00Z",
-                "to": "2026-01-01T12:00:10Z",
-                "bucket_seconds": 10,
-            },
-        )
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={
+            "from": "2026-01-01T12:00:00Z",
+            "to": "2026-01-01T12:00:10Z",
+            "bucket_seconds": 10,
+        },
+    )
 
     assert response.status_code == 200
     buckets = response.json()

@@ -8,7 +8,7 @@ from sqlmodel import select
 
 from rest_assured.src.models.checks import CheckResult
 from rest_assured.src.models.services import Service
-from rest_assured.src.scheduler.runner import SchedulerRunner
+from rest_assured.src.services.scheduler.runner import SchedulerRunner
 
 pytestmark = pytest.mark.httpx_mock(
     assert_all_responses_were_requested=False,

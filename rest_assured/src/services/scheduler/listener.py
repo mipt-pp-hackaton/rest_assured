@@ -5,11 +5,10 @@ import json
 import logging
 
 import asyncpg
-from sqlmodel import select
 
 from rest_assured.src.configs.app.main import settings
-from rest_assured.src.models.services import Service
-from rest_assured.src.repositories.database_session import get_session
+from rest_assured.src.repositories.database_session import session_scope
+from rest_assured.src.repositories.services import fetch_active_services
 
 logger = logging.getLogger(__name__)
 
@@ -106,13 +105,8 @@ class ServiceChangeListener:
 
     async def _poll_once(self) -> None:
         """Одна итерация poll-loop'а — выделена для тестируемости."""
-        session = get_session()
-        try:
-            services = (
-                await session.exec(select(Service).where(Service.is_active.is_(True)))
-            ).all()
-        finally:
-            await session.close()
+        async with session_scope() as session:
+            services = list(await fetch_active_services(session))
 
         if not self._runner:
             return

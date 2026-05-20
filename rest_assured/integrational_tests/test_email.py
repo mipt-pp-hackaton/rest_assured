@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from rest_assured.src.configs.app.smtp import SmtpConfig
-from rest_assured.src.notifications.email import EmailSender
+from rest_assured.src.services.notifications.email import EmailSender
 
 
 @pytest.fixture
