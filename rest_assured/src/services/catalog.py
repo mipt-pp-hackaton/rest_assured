@@ -24,9 +24,7 @@ class CatalogService:
         return ServiceRead.model_validate(service) if service else None
 
     async def create(self, data: ServiceCreate) -> ServiceRead:
-        service = await create_service(
-            self._session, data=data.model_dump(exclude_unset=True)
-        )
+        service = await create_service(self._session, data=data.model_dump(exclude_unset=True))
         return ServiceRead.model_validate(service)
 
     async def update(self, service_id: int, data: ServiceUpdate) -> ServiceRead | None:

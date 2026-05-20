@@ -66,9 +66,7 @@ async def create_incident(
     return incident
 
 
-async def close_incident(
-    session: AsyncSession, incident: Incident, closed_at: datetime
-) -> None:
+async def close_incident(session: AsyncSession, incident: Incident, closed_at: datetime) -> None:
     incident.closed_at = closed_at
     session.add(incident)
     await session.commit()

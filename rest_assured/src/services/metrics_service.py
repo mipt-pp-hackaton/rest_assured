@@ -78,9 +78,7 @@ class MetricsService:
         to: datetime,
         bucket_seconds: int,
     ) -> list[TimeseriesBucket]:
-        rows = await fetch_timeseries_buckets(
-            self._session, service_id, from_, to, bucket_seconds
-        )
+        rows = await fetch_timeseries_buckets(self._session, service_id, from_, to, bucket_seconds)
 
         buckets: list[TimeseriesBucket] = []
         for row in rows:

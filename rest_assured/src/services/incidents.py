@@ -166,9 +166,7 @@ class IncidentsService:
         checks = await fetch_checks_since(self._session, check.service_id, since)
         sla_pct = compute_sla(list(checks)) * 100.0 if checks else 100.0
 
-        active_breach = await find_open_incident(
-            self._session, service.id, sla_breach=True
-        )
+        active_breach = await find_open_incident(self._session, service.id, sla_breach=True)
         if sla_pct < service.sla_target_pct:
             if active_breach is None:
                 inc = await create_incident(
