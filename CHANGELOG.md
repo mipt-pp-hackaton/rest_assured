@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v1.12.1 (2026-05-21)
+
+### Bug Fixes
+
+- Structure
+  ([`9b29e18`](https://github.com/mipt-pp-hackaton/rest_assured/commit/9b29e18bec52274a72d59829f6ec266e4c593d96))
+
+### Chores
+
+- Auto format
+  ([`988b8bd`](https://github.com/mipt-pp-hackaton/rest_assured/commit/988b8bd61b1172e0f85e7b59e195152c2ce76a1e))
+
+- Deleted unneccecary config files
+  ([`5f017ae`](https://github.com/mipt-pp-hackaton/rest_assured/commit/5f017ae9842f1c2156af244229b9897becbaca84))
+
+### Refactoring
+
+- Remove test service and related files
+  ([`a595f60`](https://github.com/mipt-pp-hackaton/rest_assured/commit/a595f609191fb372a5717f3d50e01facc9ee74c9))
+
+- Replace get_session with session_scope for better session management and add new repository
+  functions for incident and service handling
+  ([`ace7878`](https://github.com/mipt-pp-hackaton/rest_assured/commit/ace7878c0dc146b2e00fb2cfe30b5ce935aefa8e))
+
+- Tests
+  ([`a5b906f`](https://github.com/mipt-pp-hackaton/rest_assured/commit/a5b906f2752516ea8a988b0bff3512e2c69739e6))
+
+
 ## v1.12.0 (2026-05-19)
 
 ### Features
