@@ -62,7 +62,7 @@ make dprod
 
 ### Локальная разработка
 ```bash
-make ddev
+make ddev  
 ```
 
 ---
