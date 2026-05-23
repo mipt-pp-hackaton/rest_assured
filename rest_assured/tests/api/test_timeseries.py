@@ -8,7 +8,9 @@ from httpx import ASGITransport, AsyncClient
 from rest_assured.src.api.dependencies import get_metrics_service
 from rest_assured.src.api.routers.metrics import router
 from rest_assured.src.models.services import Service
+from rest_assured.src.models.users import User
 from rest_assured.src.schemas.metrics import TimeseriesBucket
+from rest_assured.src.services.auth.dependencies import get_current_active_user
 
 
 def percentile_cont(values: list[int], percentile: float) -> float:
@@ -80,6 +82,9 @@ def make_app(service: Service | None, checks: list[dict[str, Any]]) -> FastAPI:
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[get_metrics_service] = lambda: FakeMetricsService(service, checks)
+    app.dependency_overrides[get_current_active_user] = lambda: User(
+        id=1, email="admin@example.com", password_hash="", is_active=True, is_superuser=True
+    )
     return app
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from rest_assured.src.api.dependencies import MetricsServiceDep
 from rest_assured.src.schemas.metrics import (
@@ -8,8 +8,13 @@ from rest_assured.src.schemas.metrics import (
     ServiceSummaryItem,
     TimeseriesBucket,
 )
+from rest_assured.src.services.auth.dependencies import get_current_active_user
 
-router = APIRouter(prefix="/api/services", tags=["metrics"])
+router = APIRouter(
+    prefix="/api/services",
+    tags=["metrics"],
+    dependencies=[Depends(get_current_active_user)],
+)
 
 
 @router.get("/summary", response_model=list[ServiceSummaryItem])

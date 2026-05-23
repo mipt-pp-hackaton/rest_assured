@@ -27,4 +27,4 @@ def test_jwt_env_override(monkeypatch):
         jwt=env_settings["jwt"],
     )
 
-    assert overridden_settings.jwt.secret == "override-secret"
+    assert overridden_settings.jwt.secret.get_secret_value() == "override-secret"

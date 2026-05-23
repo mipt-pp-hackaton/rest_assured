@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy import update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rest_assured.src.models.checks import CheckResult
+from rest_assured.src.models.users import User
+from rest_assured.src.services.auth.jwt import create_access_token, create_refresh_token
 
 _BASE_URL = "http://test"
 
@@ -35,14 +38,14 @@ async def _seed_checks(
 
 
 @pytest.mark.asyncio
-async def test_metrics_returns_404_for_missing_service(async_client):
+async def test_metrics_returns_404_for_missing_service(override_auth, async_client):
     response = await async_client.get("/api/services/99999/metrics")
     assert response.status_code == 404
     assert response.json()["detail"] == "service not found"
 
 
 @pytest.mark.asyncio
-async def test_metrics_zero_for_service_without_checks(async_client, seed_service):
+async def test_metrics_zero_for_service_without_checks(override_auth, async_client, seed_service):
     service = await seed_service()
 
     response = await async_client.get(f"/api/services/{service.id}/metrics")
@@ -56,7 +59,9 @@ async def test_metrics_zero_for_service_without_checks(async_client, seed_servic
 
 
 @pytest.mark.asyncio
-async def test_metrics_matches_sber_example(async_client, seed_service, postgres_connection):
+async def test_metrics_matches_sber_example(
+    override_auth, async_client, seed_service, postgres_connection
+):
     """SBER reference series: 7 checks, current uptime = 10s, SLA = 50%."""
     service = await seed_service()
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -81,14 +86,14 @@ async def test_metrics_matches_sber_example(async_client, seed_service, postgres
 
 
 @pytest.mark.asyncio
-async def test_summary_empty_when_no_services(async_client):
+async def test_summary_empty_when_no_services(override_auth, async_client):
     response = await async_client.get("/api/services/summary")
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.asyncio
-async def test_summary_excludes_inactive_services(async_client, seed_service):
+async def test_summary_excludes_inactive_services(override_auth, async_client, seed_service):
     await seed_service(name="active", is_active=True)
     await seed_service(name="inactive", is_active=False)
 
@@ -101,7 +106,7 @@ async def test_summary_excludes_inactive_services(async_client, seed_service):
 
 @pytest.mark.asyncio
 async def test_summary_reports_last_check_and_metrics(
-    async_client, seed_service, postgres_connection
+    override_auth, async_client, seed_service, postgres_connection
 ):
     service = await seed_service()
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -131,7 +136,7 @@ async def test_summary_reports_last_check_and_metrics(
 
 
 @pytest.mark.asyncio
-async def test_timeseries_returns_404_for_missing_service(async_client):
+async def test_timeseries_returns_404_for_missing_service(override_auth, async_client):
     response = await async_client.get(
         "/api/services/99999/timeseries",
         params={"from": "2026-01-01T12:00:00Z", "to": "2026-01-01T13:00:00Z"},
@@ -141,7 +146,9 @@ async def test_timeseries_returns_404_for_missing_service(async_client):
 
 
 @pytest.mark.asyncio
-async def test_timeseries_returns_422_when_to_not_after_from(async_client, seed_service):
+async def test_timeseries_returns_422_when_to_not_after_from(
+    override_auth, async_client, seed_service
+):
     service = await seed_service()
 
     response = await async_client.get(
@@ -153,7 +160,7 @@ async def test_timeseries_returns_422_when_to_not_after_from(async_client, seed_
 
 @pytest.mark.asyncio
 async def test_timeseries_empty_when_range_has_no_checks(
-    async_client, seed_service, postgres_connection
+    override_auth, async_client, seed_service, postgres_connection
 ):
     service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -174,7 +181,7 @@ async def test_timeseries_empty_when_range_has_no_checks(
 
 @pytest.mark.asyncio
 async def test_timeseries_groups_checks_into_buckets(
-    async_client, seed_service, postgres_connection
+    override_auth, async_client, seed_service, postgres_connection
 ):
     service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -208,7 +215,7 @@ async def test_timeseries_groups_checks_into_buckets(
 
 @pytest.mark.asyncio
 async def test_timeseries_counts_down_checks_per_bucket(
-    async_client, seed_service, postgres_connection
+    override_auth, async_client, seed_service, postgres_connection
 ):
     service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -237,7 +244,9 @@ async def test_timeseries_counts_down_checks_per_bucket(
 
 
 @pytest.mark.asyncio
-async def test_timeseries_computes_p95_latency(async_client, seed_service, postgres_connection):
+async def test_timeseries_computes_p95_latency(
+    override_auth, async_client, seed_service, postgres_connection
+):
     service = await seed_service()
     base = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     # 10 checks with latency_ms = 0..9
@@ -269,3 +278,69 @@ async def test_timeseries_computes_p95_latency(async_client, seed_service, postg
     assert bucket["checks_total"] == 10
     # percentile_cont(0.95) over [0..9] = 8.55
     assert bucket["latency_p95_ms"] == pytest.approx(8.55)
+
+
+# ---------------------------------------------------------------------------
+# T12 — router-level auth on /api/services (metrics endpoints)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_summary_requires_auth(async_client):
+    """T12 RED: GET /api/services/summary без токена → 401."""
+    response = await async_client.get("/api/services/summary")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_service_metrics_requires_auth(async_client, seed_service):
+    """T12 RED: GET /api/services/{id}/metrics без токена → 401."""
+    service = await seed_service()
+    response = await async_client.get(f"/api/services/{service.id}/metrics")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_service_timeseries_requires_auth(async_client, seed_service):
+    """T12 RED: GET /api/services/{id}/timeseries без токена → 401."""
+    service = await seed_service()
+    response = await async_client.get(
+        f"/api/services/{service.id}/timeseries",
+        params={"from": "2026-01-01T12:00:00Z", "to": "2026-01-01T13:00:00Z"},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_summary_with_active_token_returns_200(authorized_client):
+    """T12 GREEN-side: активный юзер → 200."""
+    response = await authorized_client.get("/api/services/summary")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_summary_inactive_user_returns_403(async_client, seed_user, postgres_connection):
+    """T12 RED: is_active=False → 403 'Inactive user'."""
+    user = await seed_user("inactive-metrics@example.com", "secret123")
+    token = create_access_token(user.id)
+    await postgres_connection.exec(update(User).where(User.id == user.id).values(is_active=False))
+    await postgres_connection.commit()
+
+    response = await async_client.get(
+        "/api/services/summary", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Inactive user"}
+
+
+@pytest.mark.asyncio
+async def test_summary_refresh_token_rejected(async_client, seed_user):
+    """T12 RED: refresh token вместо access → 401 'Invalid token type'."""
+    user = await seed_user("refresh-metrics@example.com", "secret123")
+    refresh = create_refresh_token(user.id)
+    response = await async_client.get(
+        "/api/services/summary", headers={"Authorization": f"Bearer {refresh}"}
+    )
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid token type"}

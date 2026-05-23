@@ -1,6 +1,12 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
-router = APIRouter(prefix="/api/health", tags=["scheduler"])
+from rest_assured.src.services.auth.dependencies import get_current_active_user
+
+router = APIRouter(
+    prefix="/api/health",
+    tags=["scheduler"],
+    dependencies=[Depends(get_current_active_user)],
+)
 
 
 @router.get("/scheduler")

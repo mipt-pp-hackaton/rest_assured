@@ -25,6 +25,7 @@ dev:
 
 ddev:
 	@echo "start docker dev containers"
+	docker compose -f docker/docker-compose.test.yml build
 	docker compose -f docker/docker-compose.test.yml up
 
 dprod:

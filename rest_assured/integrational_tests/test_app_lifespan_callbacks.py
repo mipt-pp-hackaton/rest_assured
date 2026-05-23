@@ -41,7 +41,7 @@ def notifications_config():
 
 
 @pytest.mark.asyncio
-async def test_callback_registered_on_startup():
+async def test_callback_registered_on_startup(override_auth):
     """После старта приложения коллбэк зарегистрирован в SchedulerRunner."""
     with TestClient(app) as client:
         # Отправляем запрос, чтобы lifespan точно выполнился
