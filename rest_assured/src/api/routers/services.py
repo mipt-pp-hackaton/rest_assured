@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from rest_assured.src.api.dependencies import CatalogServiceDep
-from rest_assured.src.models.users import User
 from rest_assured.src.schemas.services import ServiceCreate, ServiceRead, ServiceUpdate
-from rest_assured.src.services.auth.dependencies import get_current_user
+from rest_assured.src.services.auth.dependencies import get_current_active_user
 
-router = APIRouter(prefix="/api/services", tags=["services"])
+router = APIRouter(
+    prefix="/api/services",
+    tags=["services"],
+    dependencies=[Depends(get_current_active_user)],
+)
 
 
 @router.get("/", response_model=list[ServiceRead])
@@ -17,7 +20,6 @@ async def list_services_endpoint(catalog: CatalogServiceDep) -> list[ServiceRead
 async def create_service_endpoint(
     data: ServiceCreate,
     catalog: CatalogServiceDep,
-    _: User = Depends(get_current_user),
 ) -> ServiceRead:
     return await catalog.create(data)
 
@@ -35,7 +37,6 @@ async def update_service_endpoint(
     service_id: int,
     data: ServiceUpdate,
     catalog: CatalogServiceDep,
-    _: User = Depends(get_current_user),
 ) -> ServiceRead:
     service = await catalog.update(service_id, data)
     if service is None:
@@ -47,7 +48,6 @@ async def update_service_endpoint(
 async def delete_service_endpoint(
     service_id: int,
     catalog: CatalogServiceDep,
-    _: User = Depends(get_current_user),
 ) -> None:
     found = await catalog.delete(service_id)
     if not found:

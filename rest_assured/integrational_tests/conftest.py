@@ -96,10 +96,20 @@ def router_api() -> Generator[TestClient, Any, None]:
 @pytest.fixture
 def override_auth() -> Generator[None, Any, None]:
     """Подменяет get_current_user на фиктивного админа — для тестов авторизованных
-    эндпоинтов без поднятия пары login + JWT."""
+    эндпоинтов без поднятия пары login + JWT.
+
+    Возвращаем активного суперюзера, чтобы override прошёл и через
+    get_current_active_user, и через get_current_superuser-цепочки.
+    """
     from rest_assured.src.services.auth.dependencies import get_current_user
 
-    app.dependency_overrides[get_current_user] = lambda: User(id=1, email="admin@example.com")
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1,
+        email="admin@example.com",
+        password_hash="",
+        is_active=True,
+        is_superuser=True,
+    )
     yield
     app.dependency_overrides.clear()
 
@@ -143,9 +153,9 @@ async def seed_user(postgres_connection: AsyncSession) -> SeedUserFn:
     async def _seed(
         email: str = "user@example.com",
         password: str = "secret123",
-        is_admin: bool = False,
+        is_superuser: bool = False,
     ) -> User:
-        user = User(email=email, password_hash=hash_password(password), is_admin=is_admin)
+        user = User(email=email, password_hash=hash_password(password), is_superuser=is_superuser)
         postgres_connection.add(user)
         await postgres_connection.commit()
         await postgres_connection.refresh(user)
@@ -162,8 +172,8 @@ async def seed_user(postgres_connection: AsyncSession) -> SeedUserFn:
 @pytest_asyncio.fixture
 async def auth_token(seed_user: SeedUserFn) -> str:
     """Сидит дефолтного юзера и возвращает свежий JWT."""
-    await seed_user("auth@example.com", "secret123")
-    return create_access_token("auth@example.com")
+    user = await seed_user("auth@example.com", "secret123")
+    return create_access_token(user.id)
 
 
 @pytest_asyncio.fixture

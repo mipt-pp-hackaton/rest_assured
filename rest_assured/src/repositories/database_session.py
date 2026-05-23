@@ -47,3 +47,13 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
         yield session
     finally:
         await session.close()
+
+
+async def get_session_dependency() -> AsyncIterator[AsyncSession]:
+    """FastAPI dependency yielding an AsyncSession.
+
+    Closes (with rollback on error) at end of request. Built on top of
+    `session_scope` so we don't duplicate the try/yield/close ceremony.
+    """
+    async with session_scope() as session:
+        yield session

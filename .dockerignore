@@ -25,7 +25,6 @@ htmlcov
 # Local config / secrets
 .env
 .env.local
-settings.toml
 
 # Docs / meta
 README.md

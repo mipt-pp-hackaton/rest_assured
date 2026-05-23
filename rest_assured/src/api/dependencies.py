@@ -1,24 +1,19 @@
 """Shared FastAPI dependency providers."""
 
-from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from rest_assured.src.repositories.database_session import get_session
+from rest_assured.src.repositories.database_session import get_session_dependency
 from rest_assured.src.services.auth import AuthService
 from rest_assured.src.services.catalog import CatalogService
 from rest_assured.src.services.incidents import IncidentsService
 from rest_assured.src.services.metrics_service import MetricsService
 
-
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    session = get_session()
-    try:
-        yield session
-    finally:
-        await session.close()
+# Re-export under the historical name so existing consumers (and FastAPI
+# `dependency_overrides[get_db_session]` patches in tests) keep working.
+get_db_session = get_session_dependency
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]

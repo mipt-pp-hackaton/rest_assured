@@ -54,7 +54,7 @@ class EmailSender:
                 use_tls=self._cfg.use_tls,
             ) as smtp:
                 if self._cfg.user:
-                    await smtp.login(self._cfg.user, self._cfg.password)
+                    await smtp.login(self._cfg.user, self._cfg.password.get_secret_value())
                 await smtp.send_message(msg)
 
             logger.info(f"Email sent: kind={kind}, to={to}")

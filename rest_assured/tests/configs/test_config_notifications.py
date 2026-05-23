@@ -19,7 +19,7 @@ def test_smtp_defaults():
     )
     assert cfg.port == 1025
     assert cfg.user == ""
-    assert cfg.password == ""
+    assert cfg.password.get_secret_value() == ""
     assert cfg.use_tls is False
 
 

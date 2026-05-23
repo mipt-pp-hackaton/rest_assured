@@ -6,7 +6,9 @@ from httpx import ASGITransport, AsyncClient
 
 from rest_assured.src.api.dependencies import get_metrics_service
 from rest_assured.src.api.routers.metrics import router
+from rest_assured.src.models.users import User
 from rest_assured.src.schemas.metrics import ServiceSummaryItem
+from rest_assured.src.services.auth.dependencies import get_current_active_user
 
 
 class FakeMetricsService:
@@ -21,6 +23,9 @@ def make_app(rows: list[ServiceSummaryItem]) -> FastAPI:
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[get_metrics_service] = lambda: FakeMetricsService(rows)
+    app.dependency_overrides[get_current_active_user] = lambda: User(
+        id=1, email="admin@example.com", password_hash="", is_active=True, is_superuser=True
+    )
     return app
 
 

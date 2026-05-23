@@ -1,0 +1,40 @@
+[app_settings]
+host = "0.0.0.0"
+port = 8000
+use_testcontainers = true
+
+[db_settings]
+name = "test_db"
+user = "user"
+password = "CHANGE_ME"
+host = "postgres"
+port = 5432
+
+[scheduler]
+poll_interval_seconds = 5
+default_timeout_ms = 5000
+
+[metrics]
+cache_ttl_seconds = 5
+
+[smtp]
+host = "mailhog"
+port = 1025
+user = ""
+password = ""
+use_tls = false
+from_email = "noreply@example.com"
+from_name = "Rest Assured Monitoring"
+
+[notifications]
+enabled = true
+reminder_cooldown_minutes = 30
+include_runbook_link = false
+
+# Generate a strong secret with: openssl rand -hex 32
+[jwt]
+secret = "CHANGE_ME_TO_RANDOM_64_HEX"
+algorithm = "HS256"
+access_token_ttl_minutes = 15
+refresh_token_ttl_days = 14
+ttl_hours = 24  # deprecated: use access_token_ttl_minutes
