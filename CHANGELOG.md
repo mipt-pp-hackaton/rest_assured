@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.3 (2026-05-23)
+
+### Bug Fixes
+
+- Replace python-jose with
+  ([`d7a9538`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d7a9538b5a08849b943c792f861aa95b47582859))
+
+
 ## v1.12.2 (2026-05-23)
 
 ### Bug Fixes
