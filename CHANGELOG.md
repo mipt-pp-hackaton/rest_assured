@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.2 (2026-05-23)
+
+### Bug Fixes
+
+- Trigger docker release
+  ([`38b8ae9`](https://github.com/mipt-pp-hackaton/rest_assured/commit/38b8ae963f10b7b3556056bfb76b9f455ae6a56e))
+
+
 ## v1.12.1 (2026-05-21)
 
 ### Bug Fixes
