@@ -1,10 +1,10 @@
 import pytest
 
 
-def test_jose_import():
-    from jose import jwt as jose_jwt  # noqa
+def test_pyjwt_import():
+    import jwt  # noqa
 
-    assert jose_jwt is not None
+    assert jwt is not None
 
 
 def test_passlib_import():

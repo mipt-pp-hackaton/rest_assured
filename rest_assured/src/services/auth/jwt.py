@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
+import jwt
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
 
 from rest_assured.src.configs.app.main import settings
 
@@ -38,7 +38,7 @@ def decode_token(token: str, *, expected_type: Literal["access", "refresh"]) -> 
             settings.jwt.secret.get_secret_value(),
             algorithms=[settings.jwt.algorithm],
         )
-    except JWTError as e:
+    except jwt.PyJWTError as e:
         logger.warning("JWT decode failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
