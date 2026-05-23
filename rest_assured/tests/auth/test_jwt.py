@@ -14,9 +14,9 @@ import base64
 import json
 from datetime import timedelta
 
+import jwt as jose_jwt
 import pytest
 from fastapi import HTTPException
-from jose import jwt as jose_jwt
 from pydantic import SecretStr
 
 from rest_assured.src.configs.app.main import settings
