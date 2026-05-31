@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.4 (2026-05-31)
+
+### Bug Fixes
+
+- Readme and seed
+  ([`74156ce`](https://github.com/mipt-pp-hackaton/rest_assured/commit/74156ce231ddc215493d7a44d3682fb194712f74))
+
+
 ## v1.12.3 (2026-05-23)
 
 ### Bug Fixes
