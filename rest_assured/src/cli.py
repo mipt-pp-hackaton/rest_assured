@@ -31,15 +31,29 @@ def _run_migrations():
     command.upgrade(alembic_cfg, "heads")
 
 
+async def _run_seed():
+    from rest_assured.src.scripts.seed import seed
+
+    await seed()
+
+
 def main():
     parser = argparse.ArgumentParser(prog="rest-assured")
+    parser.add_argument(
+        "--seed",
+        action="store_true",
+        help="Seed admin user and demo data, then exit",
+    )
     sub = parser.add_subparsers(dest="command")
     sub.add_parser("server", help="Start the FastAPI server")
     sub.add_parser("migrate", help="Run pending Alembic migrations")
+    sub.add_parser("seed", help="Seed admin user and demo data, then exit")
 
     args = parser.parse_args()
 
-    if args.command == "migrate":
+    if args.seed or args.command == "seed":
+        asyncio.run(_run_seed())
+    elif args.command == "migrate":
         _run_migrations()
     else:
         asyncio.run(_start_server())

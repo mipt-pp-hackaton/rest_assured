@@ -21,59 +21,280 @@
 
 ## ✨ Ключевые возможности
 
-- 🔍 **Автоматический мониторинг**: Регулярная проверка REST-endpoint’ов по заданному расписанию.
-- ⚙️ **Управление сервисами**: Гибкое добавление и удаление сервисов для мониторинга через API.
-- 👥 **Ответственные лица**: Закрепление конкретных сотрудников за каждым сервисом для адресных уведомлений.
-- 📈 **SLA и Uptime**: Расчет и хранение статистики доступности, отслеживание соблюдения SLA.
-- 📧 **Умные уведомления**: Автоматическая отправка Email-оповещений при обнаружении недоступности.
-- 📊 **Сводная аналитика**: Получение отчетов по состоянию всех отслеживаемых систем в одном месте.
-- 🧪 **Тестовый полигон**: Наличие встроенного тестового сервиса для демонстрации работы мониторинга.
+- 🔍 **Автоматический мониторинг**: фоновый планировщик опрашивает каждый зарегистрированный REST-endpoint по индивидуальному интервалу (`interval_ms`).
+- ⚙️ **Управление сервисами**: полный CRUD каталога сервисов через REST API (создание, чтение, обновление, удаление).
+- 🛡 **Защита от SSRF**: при регистрации URL валидируется — разрешены только `http`/`https`, hostname резолвится, а private/loopback/link-local адреса отклоняются.
+- 🔐 **Аутентификация**: JWT (access + refresh токены), пароли хэшируются через bcrypt, провижининг пользователей доступен только администраторам.
+- 📈 **SLA и Uptime**: расчёт текущего аптайма, процента SLA и временных рядов (timeseries) с latency p95.
+- 🚨 **Инциденты**: автоматическое открытие инцидента при первом сбое и закрытие при восстановлении сервиса.
+- 📧 **Умные уведомления**: Email-оповещения через SMTP при инцидентах с защитой от спама (cooldown).
+- 📊 **Сводная аналитика**: единый эндпоинт со статусом всех отслеживаемых систем.
 
 ---
 
-## 🛠 Технические требования
+## 🧰 Технологический стек
 
-- **Язык**: Python 3.13
-- **API**: Полное взаимодействие через REST API.
-- **Хранилище**: PostgreSQL (хранение конфигураций, истории проверок и статистики).
-- **Миграции**: Alembic для контроля схемы БД.
-- **Контейнеризация**: Полная поддержка Docker и Docker Compose.
-- **CI/CD**: Автоматическое версионирование (Semantic Release) и прогон тестов.
+| Слой | Технология |
+|------|-----------|
+| Язык | Python 3.13 |
+| Web-фреймворк | FastAPI (`fastapi[standard]`) |
+| ORM / модели | SQLModel поверх SQLAlchemy (async) |
+| База данных | PostgreSQL (драйвер `asyncpg`) |
+| Миграции | Alembic (async `env.py`) |
+| HTTP-клиент | httpx (async, shared `AsyncClient`) |
+| Конфигурация | Dynaconf + Pydantic (`SecretStr` для секретов) |
+| Аутентификация | PyJWT (`pyjwt[crypto]`) + passlib/bcrypt |
+| Уведомления | aiosmtplib + Jinja2 |
+| Пакетный менеджер | Poetry |
+| Качество кода | Ruff (format + lint), mypy |
+| Тесты | pytest, pytest-asyncio, pytest-httpx, testcontainers |
+| Релизы | python-semantic-release (Conventional Commits) |
+| Контейнеризация | Docker (multi-stage) + Docker Compose |
+
+---
+
+## 🏗 Архитектура проекта
+
+Приложение — это FastAPI-сервис с **встроенным фоновым планировщиком**, который живёт внутри того же процесса (никаких отдельных воркеров/Celery). Фабрика `create_app()` (`rest_assured/src/main.py`) создаёт планировщик и listener, регистрирует роутеры и через `lifespan` поднимает/гасит фоновые задачи.
+
+### Общая схема
+
+```mermaid
+flowchart LR
+    Client[REST-клиент] -->|JWT| API[FastAPI routers]
+    API --> SVC[Service layer]
+    SVC --> REPO[Repositories]
+    REPO --> DB[(PostgreSQL)]
+
+    subgraph App process
+        API
+        SVC
+        REPO
+        Runner[SchedulerRunner]
+        Listener[ServiceChangeListener]
+    end
+
+    Runner -->|httpx| Targets[Внешние сервисы]
+    Runner -->|CheckResult| DB
+    Runner -->|callback| INC[IncidentsService]
+    INC -->|email| SMTP[SMTP / MailHog]
+    DB -. NOTIFY service_changed .-> Listener
+    Listener -->|ensure/stop/refresh| Runner
+```
+
+### Слои приложения
+
+| Слой | Каталог | Назначение |
+|------|---------|-----------|
+| **API / роутеры** | `api/`, `api/routers/` | HTTP-эндпоинты, валидация запросов, JWT-зависимости |
+| **Схемы** | `schemas/` | Pydantic-модели запросов/ответов (DTO) |
+| **Бизнес-логика** | `services/` | Каталог, инциденты, метрики, auth, уведомления |
+| **Планировщик** | `services/scheduler/` | Фоновый опрос сервисов и классификация ответов |
+| **Репозитории** | `repositories/` | Доступ к данным поверх async-сессий SQLModel |
+| **Модели** | `models/` | SQLModel-таблицы (`services`, `check_results`, `incidents`, `notification_log`, `users`) |
+| **Конфигурация** | `configs/app/` | Pydantic-конфиги из `settings.toml` (Dynaconf) |
+| **Миграции** | `alembic/` | Версионирование схемы БД |
+
+Поток обычного запроса: `HTTP → router (Depends-аутентификация) → *Service (бизнес-логика) → *Repository → PostgreSQL`. Сессии БД выдаёт `repositories/database_session.py`: для запросов — FastAPI-зависимость `get_session_dependency` (alias `get_db_session`), для фоновых задач и скриптов — `session_scope()` (async-contextmanager, гарантирует закрытие сессии; `commit`/`rollback` выполняют сами функции репозиториев). При `app_settings.use_testcontainers` движок использует `NullPool`, чтобы тесты не делили пул соединений.
+
+### Подсистема планировщика
+
+Ядро проекта — `rest_assured/src/services/scheduler/`, четыре связанных модуля:
+
+- **`runner.py` — `SchedulerRunner`**: оркестратор. `start()` загружает все `is_active=True` сервисы (3×1s retry; если БД недоступна — стартует с пустым набором, listener восстановит). Создаёт shared `httpx.AsyncClient(follow_redirects=False)` (защита от SSRF-редиректов). Держит `_tasks: dict[service_id, asyncio.Task]` и счётчики (`checks_total`, `checks_failed`, `last_loop_at`). API для listener'а: `active_service_ids()`, `ensure_running(service)`, `stop_service(sid)`, `refresh_service(sid)`. Через `register_callback()` подключаются async-коллбэки, `fire_callbacks(check)` их вызывает.
+- **`worker.py` — `worker_loop(runner, service)`**: бесконечный per-service цикл: `sleep(interval_ms)` → httpx-запрос → `evaluate_response(...)` → инкремент счётчиков **до** `commit()` (факт проверки не теряется при падении БД) → `session.commit()` (rollback+log при ошибке, цикл продолжается) → `runner.fire_callbacks(check)`.
+- **`evaluate.py` — `evaluate_response(...)`**: pure-функция, возвращает `CheckResult`. Правило успеха: если у сервиса задан `expected_status` — требуется точное совпадение, иначе успех = `200 ≤ status < 300`. В `error` сохраняется `f"{type(exc).__name__}: {str(exc)[:480]}"` (никогда `repr` — он мог бы утечь URL с Basic Auth).
+- **`listener.py` — `ServiceChangeListener`**: подписан на PostgreSQL `LISTEN service_changed` через прямое asyncpg-соединение (вне SQLAlchemy-пула, чтобы pool-rotation не убивал подписку). Payload notify — JSON-объект `{"id": <service_id>}`, обрабатывается через `runner.refresh_service(id)`. Параллельно **всегда** работает `_poll_loop()`: каждые `scheduler.poll_interval_seconds` сравнивает `active_service_ids()` со списком из БД и подтягивает изменения (страховка на случай мёртвого `LISTEN` или пропущенных за время дисконнекта `NOTIFY`). Payload/channel прогоняются через `_sanitize_log()` (защита от log-injection).
+
+Изменения каталога (создание/обновление/удаление сервиса) транслируются воркерам почти мгновенно: репозиторий эмитит `pg_notify('service_changed', ...)` → listener вызывает `refresh_service` (= `stop_service` + перечитать строку + `ensure_running`). Poll-loop работает рядом как механизм гарантированной сходимости.
+
+### Модель данных
+
+| Таблица | Назначение | Ключевые поля |
+|---------|-----------|---------------|
+| `services` | Отслеживаемые сервисы | `url` (SSRF-валидатор), `http_method`, `interval_ms ≥ 1000`, `expected_status?`, `is_active`, `sla_target_pct?`, `owner_emails` (JSON), `created_by → users.id` |
+| `check_results` | Результат одной проверки | `service_id → services.id`, `checked_at`, `is_up`, `http_status?`, `latency_ms?`, `error?` — индекс `(service_id, checked_at DESC)` |
+| `incidents` | Интервал недоступности | `service_id`, `opened_at`, `closed_at?` (NULL = открыт), `last_error?`, `sla_breach` |
+| `notification_log` | Лог отправленных уведомлений | `incident_id?`, `service_id`, `kind`, `sent_at`, `recipients`, `subject`, `error?` |
+| `users` | Пользователи (JWT) | `email` (unique), `password_hash` (bcrypt), `is_active`, `is_superuser` |
+
+Все `datetime`-поля — **tz-aware UTC** (`DateTime(timezone=True)`). Состояние инцидента кодируется nullable-колонкой `closed_at` (`NULL` = открыт); повторное открытие предотвращается поиском уже открытого инцидента (`find_open_incident`) и unique-ограничением на уровне БД (миграция 004).
+
+### Структура каталогов
+
+```
+rest_assured/src/
+  main.py                       # create_app() + lifespan (runner + listener)
+  cli.py                        # CLI: server / migrate
+  api/
+    misc.py                     # /health
+    dependencies.py
+    routers/                    # auth, services, scheduler, incidents, metrics
+  schemas/                      # Pydantic DTO для запросов/ответов
+  services/
+    catalog.py  incidents.py  metrics.py  metrics_service.py
+    auth/                       # service, jwt, passwords, dependencies
+    notifications/email.py      # EmailSender (aiosmtplib + Jinja2)
+    scheduler/                  # runner, worker, evaluate, listener
+  repositories/                 # database_session + per-сущность репозитории
+  models/                       # SQLModel-таблицы
+  configs/app/                  # Settings из settings.toml (Dynaconf)
+  alembic/                      # миграции (env.py async)
+  scripts/seed.py               # admin + демо-сервисы
+  utils/version.py              # get_app_version()
+
+rest_assured/tests/                 # unit
+rest_assured/integrational_tests/   # требует Docker (testcontainers Postgres)
+docker/                             # docker-compose.{test,prod}.yml
+```
+
+---
+
+## 🌐 API — эндпоинты
+
+Базовый адрес по умолчанию — `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна на **`/docs`**, ReDoc — на **`/redoc`**, OpenAPI-схема — на **`/openapi.json`**.
+
+> ℹ️ Глобального префикса (`/api/v1` и т.п.) нет — каждая группа роутеров несёт свой собственный префикс.
+
+**Уровни доступа:**
+
+| Значок | Уровень | Требование |
+|:---:|---------|-----------|
+| 🔓 | анонимный | токен не нужен |
+| 🔑 | пользователь | валидный access-токен + `is_active` (`get_current_active_user`) |
+| 👑 | администратор | дополнительно `is_superuser` (`get_current_superuser`) |
+
+### 🔐 Аутентификация — `/api/auth`
+
+| Метод | Путь | Доступ | Описание |
+|-------|------|:---:|----------|
+| `POST` | `/api/auth/login` | 🔓 | Вход по email/паролю (OAuth2 password form, поле `username` = email). Возвращает пару `access` + `refresh`. |
+| `POST` | `/api/auth/refresh` | 🔓 | Обмен refresh-токена на новую пару токенов. |
+| `POST` | `/api/auth/register` | 👑 | Создание нового пользователя (только админ). |
+| `GET`  | `/api/auth/me` | 🔑 | Профиль текущего пользователя. |
+
+- **Запрос `login`** — форма `application/x-www-form-urlencoded`: `username` (email), `password`.
+- **Запрос `refresh`** — `RefreshRequest { refresh_token }`.
+- **Запрос `register`** — `UserCreate { email, password (8–72 симв.), is_superuser=false }`.
+- **Ответ `login`/`refresh`** — `TokenPair { access_token, refresh_token, token_type="bearer" }`.
+- **Ответ `register`/`me`** — `UserRead { id, email, is_active, is_superuser, created_at, updated_at }`.
+- Авторизация защищённых запросов: заголовок `Authorization: Bearer <access_token>`.
+
+### ⚙️ Каталог сервисов — `/api/services`
+
+| Метод | Путь | Доступ | Описание |
+|-------|------|:---:|----------|
+| `GET`    | `/api/services/` | 🔑 | Список всех зарегистрированных сервисов. |
+| `POST`   | `/api/services/` | 🔑 | Регистрация нового сервиса (`201 Created`). |
+| `GET`    | `/api/services/{service_id}` | 🔑 | Один сервис по `id` (`404` если не найден). |
+| `PATCH`  | `/api/services/{service_id}` | 🔑 | Частичное обновление (все поля опциональны). |
+| `DELETE` | `/api/services/{service_id}` | 🔑 | Удаление сервиса (`204 No Content`). |
+
+- **Запрос `POST`** — `ServiceCreate { url, name, http_method=GET, interval_ms=60000, expected_status?, is_active=true }`. `http_method ∈ {GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS}`, `interval_ms ≥ 1000`. URL проходит SSRF-валидацию.
+- **Ответ** — `ServiceRead { id, url, name, http_method, interval_ms, expected_status, is_active, created_at }`.
+
+### 📈 Метрики — `/api/services`
+
+| Метод | Путь | Доступ | Описание |
+|-------|------|:---:|----------|
+| `GET` | `/api/services/summary` | 🔑 | Сводка по всем сервисам: аптайм, SLA %, статус последней проверки. |
+| `GET` | `/api/services/{service_id}/metrics` | 🔑 | Текущий аптайм (сек) и SLA % одного сервиса. |
+| `GET` | `/api/services/{service_id}/timeseries` | 🔑 | Временной ряд: счётчики, up-ratio, latency avg/p95 по бакетам. |
+
+- **`summary`** → `list[ServiceSummaryItem] { service_id, name, url, is_active, current_uptime_seconds, sla_pct, last_check_at?, last_check_is_up? }`.
+- **`metrics`** → `ServiceMetricsResponse { service_id, current_uptime_seconds, sla_pct, computed_at }`.
+- **`timeseries`** — query-параметры: `from` (datetime, обязателен), `to` (datetime, обязателен), `bucket_seconds` (10–3600, по умолч. 60). Возвращает `list[TimeseriesBucket] { bucket_start, checks_total, checks_up, up_ratio, latency_avg_ms?, latency_p95_ms? }`. `422`, если `to ≤ from`.
+
+### 🚨 Инциденты — `/api/incidents`
+
+| Метод | Путь | Доступ | Описание |
+|-------|------|:---:|----------|
+| `GET` | `/api/incidents` | 🔑 | Список инцидентов с фильтрами. |
+
+- **Query-параметры**: `service_id?`, `open?` (`true` — только открытые, `false` — только закрытые), `sla_breach?`, `limit` (1–500, по умолч. 100).
+- **Ответ** — `list[IncidentRead] { id, service_id, service_name, opened_at, closed_at?, last_error?, sla_breach, duration_seconds? }`.
+
+### 🩺 Служебные — health & scheduler
+
+| Метод | Путь | Доступ | Описание |
+|-------|------|:---:|----------|
+| `GET` | `/health` | 🔓 | Liveness-проверка приложения → `{ "status": "ok" }`. |
+| `GET` | `/api/health/scheduler` | 🔑 | Статистика планировщика (`checks_total`, `checks_failed`, `last_loop_at`, …). |
 
 ---
 
 ## 👤 Пользовательские сценарии (User Stories)
 
-1. **Регистрация сервиса**: Специалист поддержки через API добавляет список URL для мониторинга.
-2. **Настройка SLA**: Для каждого сервиса задается допустимый процент доступности и список Email ответственных сотрудников.
-3. **Цикл проверки**: Система в фоновом режиме выполняет запросы. В случае ошибки `HTTP 5xx` или таймаута фиксируется инцидент.
-4. **Оповещение**: При сбое система мгновенно отправляет письмо ответственному сотруднику.
-5. **Анализ**: Менеджер запрашивает сводную статистику за месяц для проверки выполнения SLA.
+1. **Регистрация сервиса**: специалист поддержки через API добавляет URL для мониторинга.
+2. **Настройка SLA**: для каждого сервиса задаётся целевой процент доступности и список Email ответственных.
+3. **Цикл проверки**: планировщик в фоне опрашивает сервисы; при ошибке/таймауте фиксируется инцидент.
+4. **Оповещение**: при сбое система отправляет письмо ответственному сотруднику.
+5. **Анализ**: менеджер запрашивает сводную статистику и timeseries для проверки выполнения SLA.
 
 ---
 
 ## 🚀 Инструкции по запуску
 
-### Быстрый старт через Docker
-Это самый простой способ запустить всю инфраструктуру (БД + Приложение + Тестовый сервис):
+### Вариант 1. Docker (рекомендуется)
+
+**Dev-окружение** (приложение + PostgreSQL + MailHog, hot-reload):
 ```bash
-make dprod
+make ddev      # docker/docker-compose.test.yml
 ```
 
-### Локальная разработка
+**Prod-окружение** (приложение + PostgreSQL + тестовый сервис + MailHog):
 ```bash
-make ddev  
+make dprod     # docker/docker-compose.prod.yml — нужен .env (см. .env.example)
 ```
+
+Порты: API — `8000`, PostgreSQL — `5432`, MailHog SMTP — `1025`, MailHog Web UI — `8025` (`http://localhost:8025`). Контейнер приложения сам прогоняет `alembic upgrade heads` при старте.
+
+### Вариант 2. Локальный запуск (без Docker)
+
+```bash
+# 1. Зависимости
+poetry install --with dev
+
+# 2. Конфигурация: скопировать пример и заполнить (файл в .gitignore)
+cp settings.toml.example settings.toml
+#    как минимум задать db_settings.* и сгенерировать jwt.secret:
+#    openssl rand -hex 32
+
+# 3. Применить миграции (нужен поднятый PostgreSQL)
+make migrate
+
+# 4. (опц.) Засеять админа и демо-сервисы
+make seed                          # = python3 -m rest_assured --seed
+#    идемпотентно, через сервисный слой (Auth/Catalog): создаёт суперюзера
+#    admin@admin.com / admin + демо-сервисы; повторный запуск не создаёт дублей
+
+# 5. Запустить сервер
+make dev       # uvicorn с hot-reload
+# или
+make run       # production uvicorn
+```
+
+После старта открой **`http://localhost:8000/docs`** — Swagger UI со всеми эндпоинтами.
+
+### Конфигурация
+
+Настройки берутся из `settings.toml` (Dynaconf). Любой ключ можно переопределить переменной окружения с префиксом `DYNACONF` и разделителем `__`, например `DYNACONF_DB_SETTINGS__HOST=...`, `DYNACONF_JWT__SECRET=...`. Секции: `[app_settings]`, `[db_settings]`, `[scheduler]`, `[metrics]`, `[smtp]`, `[notifications]`, `[jwt]`. Секреты (`db_settings.password`, `jwt.secret`, `smtp.password`) хранятся как `SecretStr`.
 
 ---
 
 ## 🧪 Тестирование и проверка
 
-Проект включает в себя как модульные, так и интеграционные тесты:
+Проект включает модульные и интеграционные тесты:
 
 - **Unit-тесты**: `make utest`
-- **Интеграционные тесты**: `make itest`
-- **Проверка качества кода**: `make lint` && `make type`
+- **Интеграционные тесты**: `make itest` (требуют Docker — testcontainers поднимает PostgreSQL)
+- **Проверка качества кода**: `make lint && make type`
+- **Автоформат**: `make format` (Ruff)
+
+Один тест запускают стандартным pytest-селектором, например:
+```bash
+poetry run pytest rest_assured/tests/scheduler/test_runner_filter.py::test_start_spawns_only_active_services -v
+```
 
 ---
 
