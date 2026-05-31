@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.6 (2026-05-31)
+
+### Bug Fixes
+
+- Update URL validation logic and enhance service schemas
+  ([`ea835b2`](https://github.com/mipt-pp-hackaton/rest_assured/commit/ea835b2b7d54d36f19134421cdabe2764bf2ffeb))
+
+
 ## v1.12.5 (2026-05-31)
 
 ### Bug Fixes
