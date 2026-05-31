@@ -3,7 +3,8 @@ is_superuser, updated_at to ``users`` and drops the legacy ``is_admin``.
 
 These tests use a DEDICATED Postgres testcontainer (separate from the
 shared one in conftest.py) so they can run ``alembic upgrade head``
-followed by ``alembic downgrade -1`` without disturbing the shared DB.
+followed by a downgrade to 008's parent (``007``) without disturbing the
+shared DB.
 """
 
 from __future__ import annotations
@@ -132,13 +133,14 @@ def test_alembic_upgrade_head_adds_user_auth_fields(
 def test_alembic_downgrade_reverses_user_auth_fields(
     isolated_postgres: str,
 ) -> None:
-    """Acceptance criterion #4: ``alembic downgrade -1`` (after upgrade)
+    """Acceptance criterion #4: downgrading past 008 (after upgrade)
     removes the three new columns and restores is_admin."""
     cfg = _alembic_config()
-    # Make sure we're at head first.
+    # Upgrade to head, then downgrade past 008 to its parent (007). Pinning to
+    # the explicit revision id (instead of a relative "-1") keeps this test
+    # correct when newer migrations are stacked on top of 008.
     command.upgrade(cfg, "head")
-    # Step back one revision.
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "007")
 
     cols = _users_columns(isolated_postgres)
 
@@ -161,7 +163,7 @@ def test_alembic_upgrade_then_downgrade_then_upgrade_is_idempotent(
     constraints, no duplicate columns)."""
     cfg = _alembic_config()
     command.upgrade(cfg, "head")
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "007")
     command.upgrade(cfg, "head")
 
     cols = _users_columns(isolated_postgres)
