@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.9 (2026-05-31)
+
+### Bug Fixes
+
+- Update incident email context builders to return flat keys for templates
+  ([`790ca63`](https://github.com/mipt-pp-hackaton/rest_assured/commit/790ca63aa70d598f4eddf0e780ca325f425d6b34))
+
+
 ## v1.12.8 (2026-05-31)
 
 ### Bug Fixes
