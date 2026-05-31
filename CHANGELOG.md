@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.8 (2026-05-31)
+
+### Bug Fixes
+
+- Email sending
+  ([`742931c`](https://github.com/mipt-pp-hackaton/rest_assured/commit/742931c394a9e5fbdccdd0e06668a213f01c6173))
+
+
 ## v1.12.7 (2026-05-31)
 
 ### Bug Fixes
