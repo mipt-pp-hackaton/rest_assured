@@ -23,7 +23,7 @@
 
 - 🔍 **Автоматический мониторинг**: фоновый планировщик опрашивает каждый зарегистрированный REST-endpoint по индивидуальному интервалу (`interval_ms`).
 - ⚙️ **Управление сервисами**: полный CRUD каталога сервисов через REST API (создание, чтение, обновление, удаление).
-- 🛡 **Защита от SSRF**: при регистрации URL валидируется — разрешены только `http`/`https`, hostname резолвится, а private/loopback/link-local адреса отклоняются.
+- 🛡 **Валидация URL**: при регистрации разрешены только `http`/`https`, hostname обязан резолвиться. Приватные/«серые» адреса (10/8, 172.16/12, 192.168/16, loopback, link-local) допускаются — инструмент штатно мониторит и внутренние сервисы. От SSRF-редиректов защищает `httpx`-клиент с `follow_redirects=False`.
 - 🔐 **Аутентификация**: JWT (access + refresh токены), пароли хэшируются через bcrypt, провижининг пользователей доступен только администраторам.
 - 📈 **SLA и Uptime**: расчёт текущего аптайма, процента SLA и временных рядов (timeseries) с latency p95.
 - 🚨 **Инциденты**: автоматическое открытие инцидента при первом сбое и закрытие при восстановлении сервиса.
@@ -112,7 +112,7 @@ flowchart LR
 
 | Таблица | Назначение | Ключевые поля |
 |---------|-----------|---------------|
-| `services` | Отслеживаемые сервисы | `url` (SSRF-валидатор), `http_method`, `interval_ms ≥ 1000`, `expected_status?`, `is_active`, `sla_target_pct?`, `owner_emails` (JSON), `created_by → users.id` |
+| `services` | Отслеживаемые сервисы | `url` (валидация схемы + резолвимости), `http_method`, `interval_ms ≥ 1000`, `expected_status?`, `is_active`, `sla_target_pct?`, `owner_emails` (JSON), `created_by → users.id` |
 | `check_results` | Результат одной проверки | `service_id → services.id`, `checked_at`, `is_up`, `http_status?`, `latency_ms?`, `error?` — индекс `(service_id, checked_at DESC)` |
 | `incidents` | Интервал недоступности | `service_id`, `opened_at`, `closed_at?` (NULL = открыт), `last_error?`, `sla_breach` |
 | `notification_log` | Лог отправленных уведомлений | `incident_id?`, `service_id`, `kind`, `sent_at`, `recipients`, `subject`, `error?` |
@@ -190,7 +190,7 @@ docker/                             # docker-compose.{test,prod}.yml
 | `PATCH`  | `/api/services/{service_id}` | 🔑 | Частичное обновление (все поля опциональны). |
 | `DELETE` | `/api/services/{service_id}` | 🔑 | Удаление сервиса (`204 No Content`). |
 
-- **Запрос `POST`** — `ServiceCreate { url, name, http_method=GET, interval_ms=60000, expected_status?, is_active=true }`. `http_method ∈ {GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS}`, `interval_ms ≥ 1000`. URL проходит SSRF-валидацию.
+- **Запрос `POST`** — `ServiceCreate { url, name, http_method=GET, interval_ms=60000, expected_status?, is_active=true }`. `http_method ∈ {GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS}`, `interval_ms ≥ 1000`. URL валидируется (схема `http`/`https` + резолвимость hostname; приватные адреса допускаются).
 - **Ответ** — `ServiceRead { id, url, name, http_method, interval_ms, expected_status, is_active, created_at }`.
 
 ### 📈 Метрики — `/api/services`
