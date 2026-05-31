@@ -27,8 +27,8 @@ htmlcov
 .env.local
 
 # Docs / meta
-README.md
-README*.md
+# README.md is intentionally NOT ignored: poetry-core needs it to build the wheel
+# (pyproject points [project].readme at it).
 CHANGELOG.md
 TASKS.md
 docs/
