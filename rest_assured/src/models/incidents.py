@@ -12,7 +12,7 @@ class Incident(SQLModel, table=True):
     __tablename__ = "incidents"
 
     id: int | None = Field(default=None, primary_key=True)
-    service_id: int = Field(foreign_key="services.id", index=True)
+    service_id: int = Field(foreign_key="services.id", ondelete="CASCADE", index=True)
     opened_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),

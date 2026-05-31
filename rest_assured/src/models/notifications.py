@@ -15,9 +15,10 @@ class NotificationLog(SQLModel, table=True):
     incident_id: int | None = Field(
         default=None,
         foreign_key="incidents.id",
+        ondelete="CASCADE",
         index=True,
     )
-    service_id: int = Field(foreign_key="services.id", index=True)
+    service_id: int = Field(foreign_key="services.id", ondelete="CASCADE", index=True)
     kind: str = Field(max_length=50)
     sent_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

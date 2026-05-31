@@ -286,3 +286,53 @@ async def test_delete(override_auth, async_client, seed_service):
 async def test_delete_not_found(override_auth, async_client):
     response = await async_client.delete(f"{_SERVICES_URL}99999")
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_cascades_children(
+    override_auth, async_client, seed_service, postgres_connection
+):
+    """Удаление сервиса с историей раньше падало с FK violation (500).
+
+    Теперь FK на check_results / incidents / notification_log имеют
+    ON DELETE CASCADE — сервис и вся его история удаляются вместе.
+    """
+    from sqlalchemy import text
+
+    from rest_assured.src.models.checks import CheckResult
+    from rest_assured.src.models.incidents import Incident
+    from rest_assured.src.models.notifications import NotificationLog
+
+    service = await seed_service()
+
+    postgres_connection.add(
+        CheckResult(service_id=service.id, is_up=True, http_status=200, latency_ms=5)
+    )
+    incident = Incident(service_id=service.id)
+    postgres_connection.add(incident)
+    await postgres_connection.commit()
+    await postgres_connection.refresh(incident)
+    postgres_connection.add(
+        NotificationLog(
+            incident_id=incident.id,
+            service_id=service.id,
+            kind="incident_opened",
+            recipients="owner@example.com",
+            subject="Service down",
+        )
+    )
+    await postgres_connection.commit()
+
+    delete_response = await async_client.delete(f"{_SERVICES_URL}{service.id}")
+    assert delete_response.status_code == 204
+
+    get_response = await async_client.get(f"{_SERVICES_URL}{service.id}")
+    assert get_response.status_code == 404
+
+    # Каскад убрал всю дочернюю историю сервиса.
+    for table in ("check_results", "incidents", "notification_log"):
+        result = await postgres_connection.exec(
+            text(f"SELECT count(*) FROM {table} WHERE service_id = :sid"),
+            params={"sid": service.id},
+        )
+        assert result.one()[0] == 0, f"{table} rows survived service delete"
