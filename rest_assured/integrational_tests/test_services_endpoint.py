@@ -167,8 +167,38 @@ async def test_create(override_auth, async_client):
     assert data["interval_ms"] == 5000
     assert data["expected_status"] == 200
     assert data["is_active"] is True
+    assert data["owner_emails"] == []
     assert "id" in data
     assert "created_at" in data
+
+
+@pytest.mark.asyncio
+async def test_create_with_owner_emails_roundtrips(override_auth, async_client):
+    payload = {
+        "name": "Notified Service",
+        "url": "http://example.com",
+        "owner_emails": ["ops@example.com", "lead@example.com"],
+    }
+    response = await async_client.post(_SERVICES_URL, json=payload)
+    assert response.status_code == 201
+    created = response.json()
+    assert created["owner_emails"] == ["ops@example.com", "lead@example.com"]
+
+    # owner_emails сохранились и возвращаются при чтении
+    get_response = await async_client.get(f"{_SERVICES_URL}{created['id']}")
+    assert get_response.status_code == 200
+    assert get_response.json()["owner_emails"] == ["ops@example.com", "lead@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_create_rejects_invalid_owner_email(override_auth, async_client):
+    payload = {
+        "name": "Bad Email Service",
+        "url": "http://example.com",
+        "owner_emails": ["not-an-email"],
+    }
+    response = await async_client.post(_SERVICES_URL, json=payload)
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

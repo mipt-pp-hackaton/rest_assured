@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from rest_assured.src.models.services import validate_public_url
 
@@ -13,6 +13,9 @@ class ServiceCreate(BaseModel):
     interval_ms: int = Field(default=60000, ge=1000)
     expected_status: Optional[int] = None
     is_active: bool = True
+    owner_emails: list[EmailStr] = Field(
+        default_factory=list, description="Email-адреса для incident-уведомлений"
+    )
 
     @field_validator("url")
     @classmethod
@@ -29,6 +32,7 @@ class ServiceUpdate(BaseModel):
     interval_ms: Optional[int] = Field(default=None, ge=1000)
     expected_status: Optional[int] = None
     is_active: Optional[bool] = None
+    owner_emails: Optional[list[EmailStr]] = None
 
     @field_validator("url")
     @classmethod
@@ -44,6 +48,7 @@ class ServiceRead(BaseModel):
     interval_ms: int
     expected_status: Optional[int] = None
     is_active: bool
+    owner_emails: list[str] = []
     created_at: datetime
 
     model_config = {"from_attributes": True}

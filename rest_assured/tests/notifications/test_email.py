@@ -2,7 +2,29 @@
 
 import pytest
 
-from rest_assured.src.services.notifications.email import _render
+from rest_assured.src.configs.app.smtp import SmtpConfig
+from rest_assured.src.services.notifications.email import EmailSender, _render
+
+
+def _smtp_config() -> SmtpConfig:
+    return SmtpConfig(
+        host="localhost",
+        port=1025,
+        user="",
+        password="",
+        use_tls=False,
+        from_email="noreply@example.com",
+        from_name="Rest Assured",
+    )
+
+
+@pytest.mark.parametrize("to", [[], ["", "   "], None])
+async def test_send_no_recipients_skips_without_smtp(to):
+    """Пустой/мусорный список получателей — не отправляем и не падаем на SMTP."""
+    sender = EmailSender(_smtp_config())
+    ok, err = await sender.send(to=to, kind="incident_opened", context={})
+    assert ok is False
+    assert err == "no recipients configured"
 
 
 @pytest.mark.parametrize(

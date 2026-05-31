@@ -18,6 +18,26 @@ def test_create_accepts_valid():
     s = ServiceCreate(url="http://example.com", name="svc", interval_ms=1000)
     assert s.url == "http://example.com"
     assert s.interval_ms == 1000
+    assert s.owner_emails == []
+
+
+def test_create_accepts_owner_emails():
+    s = ServiceCreate(
+        url="http://example.com",
+        name="svc",
+        owner_emails=["ops@example.com", "lead@example.com"],
+    )
+    assert s.owner_emails == ["ops@example.com", "lead@example.com"]
+
+
+def test_create_rejects_bad_owner_email():
+    with pytest.raises(ValidationError):
+        ServiceCreate(url="http://example.com", name="svc", owner_emails=["not-an-email"])
+
+
+def test_update_rejects_bad_owner_email():
+    with pytest.raises(ValidationError):
+        ServiceUpdate(owner_emails=["nope"])
 
 
 @pytest.mark.parametrize(

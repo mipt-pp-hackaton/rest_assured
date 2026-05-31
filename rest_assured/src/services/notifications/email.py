@@ -36,6 +36,13 @@ class EmailSender:
         Returns (True, None) on success, or (False, error_message) on failure.
         Never raises exceptions.
         """
+        recipients = [addr.strip() for addr in (to or []) if addr and addr.strip()]
+        if not recipients:
+            # Слать письмо некому (у сервиса не задан owner_emails) — это не сбой
+            # SMTP, а отсутствие конфигурации получателей. Не пытаемся отправлять,
+            # не шумим ERROR'ом; фиксируем причину для notification_log.
+            logger.warning(f"Skipping email (kind={kind}): no recipients configured")
+            return False, "no recipients configured"
         try:
             subject = _render(f"{kind}.subject.j2", context).strip()
             text_body = _render(f"{kind}.txt.j2", context)
@@ -43,7 +50,7 @@ class EmailSender:
 
             msg = EmailMessage()
             msg["From"] = f"{self._cfg.from_name} <{self._cfg.from_email}>"
-            msg["To"] = ", ".join(to)
+            msg["To"] = ", ".join(recipients)
             msg["Subject"] = subject
             msg.set_content(text_body)
             msg.add_alternative(html_body, subtype="html")

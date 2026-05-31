@@ -190,8 +190,8 @@ docker/                             # docker-compose.{test,prod}.yml
 | `PATCH`  | `/api/services/{service_id}` | 🔑 | Частичное обновление (все поля опциональны). |
 | `DELETE` | `/api/services/{service_id}` | 🔑 | Удаление сервиса (`204 No Content`). |
 
-- **Запрос `POST`** — `ServiceCreate { url, name, http_method=GET, interval_ms=60000, expected_status?, is_active=true }`. `http_method ∈ {GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS}`, `interval_ms ≥ 1000`. URL валидируется (схема `http`/`https` + резолвимость hostname; приватные адреса допускаются).
-- **Ответ** — `ServiceRead { id, url, name, http_method, interval_ms, expected_status, is_active, created_at }`.
+- **Запрос `POST`** — `ServiceCreate { url, name, http_method=GET, interval_ms=60000, expected_status?, is_active=true, owner_emails=[] }`. `http_method ∈ {GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS}`, `interval_ms ≥ 1000`. URL валидируется (схема `http`/`https` + резолвимость hostname; приватные адреса допускаются). `owner_emails` — адреса для incident-уведомлений (валидируются как email).
+- **Ответ** — `ServiceRead { id, url, name, http_method, interval_ms, expected_status, is_active, owner_emails, created_at }`.
 
 ### 📈 Метрики — `/api/services`
 
