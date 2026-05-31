@@ -1,169 +1,200 @@
-"""RED-phase tests for Fix A — scripts/seed.py cleanup.
+"""Unit tests for the demo/seed contract.
 
-Issues being pinned:
-1. Broken imports: ``rest_assured.src.auth.passwords`` and
-   ``rest_assured.src.models.user`` do not exist; correct modules are
-   ``rest_assured.src.services.auth.passwords`` and
-   ``rest_assured.src.models.users``.
-2. The ``User`` model field is ``password_hash``, not ``hashed_password``.
-3. The admin password is currently hardcoded to ``"admin"``. It must be read
-   from the ``SEED_ADMIN_PASSWORD`` env var, and the script must raise a
-   clear ``RuntimeError`` (not silently fall back) when it's missing/empty.
-
-To satisfy these tests, the developer will need to refactor ``seed.py`` to
-expose user construction as a synchronous helper (``build_admin_user()``)
-that can be tested without running the full async DB seed.
+DB-free: every collaborator (``session_scope``, ``AuthService``,
+``CatalogService`` and the repository helpers used by ``ensure_superuser``)
+is replaced with a recording fake, so nothing touches a real database.
 """
 
-from __future__ import annotations
+import inspect
+from contextlib import asynccontextmanager
 
-import importlib
-from pathlib import Path
-
-import pytest
-
+from rest_assured.src.models.users import User
+from rest_assured.src.scripts import seed
+from rest_assured.src.services.auth import service as auth_service
 from rest_assured.src.services.auth.passwords import verify_password
+from rest_assured.src.services.auth.service import AuthService
 
 
-# ---------------------------------------------------------------------------
-# AC #1 — import smoke
-# ---------------------------------------------------------------------------
-def test_seed_module_importable() -> None:
-    """The seed module must be importable; today this fails on ModuleNotFoundError."""
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    assert module is not None
+# --------------------------------------------------------------------------- #
+# Fakes
+# --------------------------------------------------------------------------- #
+class _FakeAuthService:
+    """Records the single ensure_superuser call."""
+
+    calls: list[tuple[str, str]] = []
+
+    def __init__(self, session):
+        self.session = session
+
+    async def ensure_superuser(self, email, password):
+        type(self).calls.append((email, password))
+        return User(id=1, email=email, password_hash="x", is_superuser=True)
 
 
-def test_seed_module_exposes_build_admin_user() -> None:
-    """The seed module must expose a ``build_admin_user`` callable.
+class _FakeCatalogService:
+    """Records created services; list_all returns a configurable set."""
 
-    The dev needs to extract user construction out of the async ``seed()``
-    coroutine so we can test it without a live DB session.
-    """
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    assert hasattr(
-        module, "build_admin_user"
-    ), "seed.py must expose `build_admin_user()` so admin construction is testable"
-    assert callable(module.build_admin_user)
+    created: list[object] = []
+    existing: list[object] = []
 
+    def __init__(self, session):
+        self.session = session
 
-# ---------------------------------------------------------------------------
-# AC #2 — Password is read from env var; User has correct fields
-# ---------------------------------------------------------------------------
-def test_build_admin_user_uses_password_hash_field(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "supersecret123")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
+    async def list_all(self):
+        return list(type(self).existing)
 
-    user = module.build_admin_user()
-
-    # Pin the correct field name — `password_hash`, NOT `hashed_password`.
-    assert hasattr(user, "password_hash"), "User model field must be `password_hash`"
-    assert isinstance(user.password_hash, str)
-    assert user.password_hash != ""
-    # bcrypt hashes start with $2 (e.g. $2a$, $2b$).
-    assert user.password_hash.startswith(
-        "$2"
-    ), f"Expected a bcrypt hash, got: {user.password_hash[:10]!r}"
+    async def create(self, data):
+        type(self).created.append(data)
+        return data
 
 
-def test_build_admin_user_sets_email_and_superuser(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "supersecret123")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
+class _Existing:
+    def __init__(self, url):
+        self.url = url
 
-    user = module.build_admin_user()
 
-    assert user.email == "admin@example.com"
+@asynccontextmanager
+async def _fake_session_scope():
+    yield object()
+
+
+def _patch_seed(monkeypatch, *, existing):
+    """Wire the seed module to DB-free fakes and reset recorders."""
+    _FakeAuthService.calls = []
+    _FakeCatalogService.created = []
+    _FakeCatalogService.existing = existing
+    monkeypatch.setattr(seed, "session_scope", _fake_session_scope)
+    monkeypatch.setattr(seed, "AuthService", _FakeAuthService)
+    monkeypatch.setattr(seed, "CatalogService", _FakeCatalogService)
+
+
+# --------------------------------------------------------------------------- #
+# 1. Contract constants
+# --------------------------------------------------------------------------- #
+def test_admin_credentials_constants():
+    assert seed.ADMIN_EMAIL == "admin@admin.com"
+    assert seed.ADMIN_PASSWORD == "admin"
+
+
+def test_demo_services_present():
+    assert len(seed.DEMO_SERVICES) >= 2
+
+
+def test_old_contract_symbol_removed():
+    assert not hasattr(seed, "build_admin_user")
+
+
+def test_seed_source_has_no_legacy_strings():
+    src = inspect.getsource(seed)
+    assert "SEED_ADMIN_PASSWORD" not in src
+    assert "admin@example.com" not in src
+
+
+# --------------------------------------------------------------------------- #
+# 2. Service-layer composition (empty catalog -> create every demo)
+# --------------------------------------------------------------------------- #
+async def test_seed_creates_all_demo_services_when_empty(monkeypatch):
+    _patch_seed(monkeypatch, existing=[])
+
+    await seed.seed()
+
+    assert _FakeAuthService.calls == [("admin@admin.com", "admin")]
+    created_urls = {data.url for data in _FakeCatalogService.created}
+    assert created_urls == {d.url for d in seed.DEMO_SERVICES}
+
+
+async def test_seed_calls_ensure_superuser_exactly_once(monkeypatch):
+    _patch_seed(monkeypatch, existing=[])
+
+    await seed.seed()
+
+    assert len(_FakeAuthService.calls) == 1
+
+
+# --------------------------------------------------------------------------- #
+# 3. Idempotent demo dedup (all urls already present -> zero creates)
+# --------------------------------------------------------------------------- #
+async def test_seed_is_idempotent_for_demo_services(monkeypatch):
+    existing = [_Existing(d.url) for d in seed.DEMO_SERVICES]
+    _patch_seed(monkeypatch, existing=existing)
+
+    await seed.seed()
+
+    assert _FakeCatalogService.created == []
+    # admin step still runs even when nothing is created
+    assert _FakeAuthService.calls == [("admin@admin.com", "admin")]
+
+
+# --------------------------------------------------------------------------- #
+# 4. AuthService.ensure_superuser happy path (creates a new superuser)
+# --------------------------------------------------------------------------- #
+async def test_ensure_superuser_creates_active_superuser(monkeypatch):
+    recorded = {}
+
+    async def _no_user(session, email):
+        return None
+
+    async def _fake_create_user(session, *, email, password_hash, is_superuser=False, **kw):
+        recorded["email"] = email
+        recorded["password_hash"] = password_hash
+        return User(
+            id=1,
+            email=email,
+            password_hash=password_hash,
+            is_superuser=is_superuser,
+        )
+
+    monkeypatch.setattr(auth_service, "get_user_by_email", _no_user)
+    monkeypatch.setattr(auth_service, "create_user", _fake_create_user)
+
+    svc = AuthService(session=object())
+    user = await svc.ensure_superuser("admin@admin.com", "admin")
+
     assert user.is_superuser is True
+    assert user.is_active is True
+
+    stored_hash = recorded["password_hash"]
+    assert stored_hash.startswith("$2")
+    assert verify_password("admin", stored_hash) is True
+    assert verify_password("wrong", stored_hash) is False
 
 
-def test_build_admin_user_password_round_trips(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The hash must verify against the env-supplied password."""
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "supersecret123")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
+# --------------------------------------------------------------------------- #
+# 5. AuthService.ensure_superuser idempotent branch (user already exists)
+# --------------------------------------------------------------------------- #
+async def test_ensure_superuser_returns_existing_without_create(monkeypatch):
+    existing_user = User(
+        id=42,
+        email="admin@admin.com",
+        password_hash="$2b$preexisting",
+        is_superuser=True,
+    )
 
-    user = module.build_admin_user()
+    async def _found(session, email):
+        return existing_user
 
-    assert verify_password("supersecret123", user.password_hash) is True
+    async def _must_not_run(*args, **kwargs):
+        raise AssertionError("create_user must not be called when user exists")
 
+    monkeypatch.setattr(auth_service, "get_user_by_email", _found)
+    monkeypatch.setattr(auth_service, "create_user", _must_not_run)
 
-# ---------------------------------------------------------------------------
-# AC #3 — Missing or empty env var must raise RuntimeError
-# ---------------------------------------------------------------------------
-def test_build_admin_user_raises_when_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SEED_ADMIN_PASSWORD", raising=False)
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
+    svc = AuthService(session=object())
+    user = await svc.ensure_superuser("admin@admin.com", "admin")
 
-    with pytest.raises(RuntimeError):
-        module.build_admin_user()
-
-
-def test_build_admin_user_raises_when_env_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
-
-    with pytest.raises(RuntimeError):
-        module.build_admin_user()
+    assert user is existing_user
 
 
-# ---------------------------------------------------------------------------
-# AC #4 — No silent fallback to the literal "admin" password
-# ---------------------------------------------------------------------------
-def test_build_admin_user_does_not_fall_back_to_admin_literal(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """If a strong password is supplied, the result must NOT match the legacy "admin" literal.
-
-    Guards against the dev leaving the old hardcoded default as a fallback.
-    """
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "supersecret123")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
-
-    user = module.build_admin_user()
-
-    assert (
-        verify_password("admin", user.password_hash) is False
-    ), "build_admin_user() must NOT fall back to the hardcoded 'admin' password"
+# --------------------------------------------------------------------------- #
+# 6. Structural expectations on the seed source
+# --------------------------------------------------------------------------- #
+def test_seed_source_uses_expected_collaborators():
+    src = inspect.getsource(seed)
+    assert "session_scope" in src
+    assert "AuthService" in src
+    assert "CatalogService" in src
 
 
-# ---------------------------------------------------------------------------
-# AC #5 — Improvement A: whitespace-only password is rejected
-# ---------------------------------------------------------------------------
-def test_build_admin_user_rejects_whitespace_only_password(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A password consisting purely of whitespace must be treated as empty.
-
-    Current code uses `if not password:` which lets `"   "` through. The fix
-    is to strip the value before evaluating truthiness.
-    """
-    monkeypatch.setenv("SEED_ADMIN_PASSWORD", "   ")
-    module = importlib.import_module("rest_assured.src.scripts.seed")
-    importlib.reload(module)
-
-    with pytest.raises(RuntimeError, match="SEED_ADMIN_PASSWORD"):
-        module.build_admin_user()
-
-
-# ---------------------------------------------------------------------------
-# AC #6 — Improvement C: seed() uses session_scope, not manual try/finally
-# ---------------------------------------------------------------------------
-def test_seed_uses_session_scope_not_manual_try_finally() -> None:
-    """Structural assertion: seed.py should use the canonical session_scope
-    helper from repositories.database_session instead of a manual
-    get_session() + try/finally + session.close() pattern.
-    """
-    src_path = Path(__file__).parent.parent.parent / "src" / "scripts" / "seed.py"
-    source = src_path.read_text()
-    assert (
-        "session_scope" in source
-    ), "seed.py should use session_scope helper from database_session.py"
-    # Reject the old manual lifecycle pattern.
-    assert (
-        "await session.close()" not in source
-    ), "seed.py should not manage session lifecycle manually — use session_scope"
+def test_seed_source_does_not_manually_close_session():
+    src = inspect.getsource(seed)
+    assert "await session.close()" not in src

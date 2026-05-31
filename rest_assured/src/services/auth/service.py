@@ -54,6 +54,24 @@ class AuthService:
                 detail="Email already registered",
             ) from e
 
+    async def ensure_superuser(self, email: str, password: str) -> User:
+        """Idempotently create an active superuser. Used by the seed CLI.
+
+        Bypasses ``UserCreate``'s ``min_length=8`` password rule on purpose:
+        that constraint guards public self-registration, not the domain — seed
+        credentials are operator-provided. Returns the existing user untouched
+        if the email is already present (safe to re-run).
+        """
+        existing = await get_user_by_email(self.session, email)
+        if existing is not None:
+            return existing
+        return await create_user(
+            self.session,
+            email=email,
+            password_hash=hash_password(password),
+            is_superuser=True,
+        )
+
     async def refresh(self, refresh_token: str) -> TokenPair:
         payload = decode_token(refresh_token, expected_type="refresh")
         try:

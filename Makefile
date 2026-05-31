@@ -46,7 +46,7 @@ mrmigrate:
 
 seed:
 	@echo "run seed script"
-	cd $(ROOT_PATH) && python3 -m rest_assured.src.scripts.seed
+	poetry run python3 -m rest_assured --seed
 
 itest:
 	@echo "run integrational tests"
