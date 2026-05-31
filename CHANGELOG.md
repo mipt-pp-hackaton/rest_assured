@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v1.12.7 (2026-05-31)
+
+### Bug Fixes
+
+- Implement cascading deletes for service-related records
+  ([`d77ade9`](https://github.com/mipt-pp-hackaton/rest_assured/commit/d77ade9bd5d0058249fa9b2b4572df8814abfb21))
+
+- Update downgrade logic in Alembic integration tests for user auth fields
+  ([`60136b5`](https://github.com/mipt-pp-hackaton/rest_assured/commit/60136b50f11cc7b2e4261c6183f39271c49c9636))
+
+
 ## v1.12.6 (2026-05-31)
 
 ### Bug Fixes
