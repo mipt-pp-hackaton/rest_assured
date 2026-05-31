@@ -1,12 +1,13 @@
 """State machine for incident management (OK↔FAIL) with dedup and reminders."""
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from rest_assured.src.configs.app.notifications import NotificationsConfig
 from rest_assured.src.models.checks import CheckResult
+from rest_assured.src.models.incidents import Incident
 from rest_assured.src.models.services import Service
 from rest_assured.src.repositories.checks import fetch_checks_since
 from rest_assured.src.repositories.incidents import (
@@ -25,6 +26,52 @@ from rest_assured.src.services.metrics import compute_sla
 from rest_assured.src.services.notifications.email import EmailSender
 
 logger = logging.getLogger(__name__)
+
+
+def _fmt_dt(dt: datetime) -> str:
+    """tz-aware UTC datetime → читаемая строка для писем."""
+    return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def _fmt_duration(start: datetime, end: datetime) -> str:
+    """Длительность инцидента в виде H:MM:SS (без микросекунд)."""
+    seconds = max(0, int((end - start).total_seconds()))
+    return str(timedelta(seconds=seconds))
+
+
+# Шаблоны писем ждут ПЛОСКИЕ ключи (opened_at/last_error/closed_at/duration/
+# sla_target/sla_actual) — см. templates/*.j2. Эти билдеры приводят доменные
+# объекты к нужному виду; их же дёргают unit-тесты, чтобы поля не были пустыми.
+def _incident_opened_context(service: Service, incident: Incident, check: CheckResult) -> dict:
+    return {
+        "service": service,
+        "opened_at": _fmt_dt(incident.opened_at),
+        "last_error": check.error or incident.last_error or "—",
+    }
+
+
+def _incident_reminder_context(service: Service, incident: Incident, check: CheckResult) -> dict:
+    return {
+        "service": service,
+        "opened_at": _fmt_dt(incident.opened_at),
+        "last_error": check.error or incident.last_error or "—",
+    }
+
+
+def _incident_closed_context(service: Service, incident: Incident, closed_at: datetime) -> dict:
+    return {
+        "service": service,
+        "closed_at": _fmt_dt(closed_at),
+        "duration": _fmt_duration(incident.opened_at, closed_at),
+    }
+
+
+def _sla_breach_context(service: Service, sla_actual: float) -> dict:
+    return {
+        "service": service,
+        "sla_target": service.sla_target_pct,
+        "sla_actual": round(sla_actual, 2),
+    }
 
 
 class IncidentsService:
@@ -98,7 +145,7 @@ class IncidentsService:
                     ok, err = await email_sender.send(
                         to=to_emails,
                         kind="incident_opened",
-                        context={"service": service, "incident": incident, "check": check},
+                        context=_incident_opened_context(service, incident, check),
                     )
                     await create_notification_log(
                         self._session,
@@ -119,11 +166,7 @@ class IncidentsService:
                         ok, err = await email_sender.send(
                             to=to_emails,
                             kind="incident_reminder",
-                            context={
-                                "service": service,
-                                "incident": open_incident,
-                                "check": check,
-                            },
+                            context=_incident_reminder_context(service, open_incident, check),
                         )
                         await create_notification_log(
                             self._session,
@@ -140,7 +183,7 @@ class IncidentsService:
                     ok, err = await email_sender.send(
                         to=to_emails,
                         kind="incident_closed",
-                        context={"service": service, "incident": open_incident, "check": check},
+                        context=_incident_closed_context(service, open_incident, check.checked_at),
                     )
                     await create_notification_log(
                         self._session,
@@ -179,11 +222,7 @@ class IncidentsService:
                 ok, err = await email_sender.send(
                     to=to_emails,
                     kind="sla_breach",
-                    context={
-                        "service": service,
-                        "sla_pct": sla_pct,
-                        "target": service.sla_target_pct,
-                    },
+                    context=_sla_breach_context(service, sla_pct),
                 )
                 await create_notification_log(
                     self._session,
