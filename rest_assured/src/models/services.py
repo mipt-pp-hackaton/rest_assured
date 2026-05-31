@@ -1,4 +1,3 @@
-import ipaddress
 import os
 import socket
 from datetime import datetime, timezone
@@ -12,7 +11,13 @@ from sqlmodel import Field, SQLModel
 
 
 def validate_public_url(url: str) -> str:
-    """Проверяет, что URL имеет http/https-схему и резолвится в публичный IP."""
+    """Проверяет, что URL имеет http/https-схему и его hostname резолвится.
+
+    Диапазон IP не ограничивается: разрешены любые резолвящиеся хосты, в том
+    числе приватные/«серые» адреса (10/8, 172.16/12, 192.168/16) — инструмент
+    штатно мониторит и внутренние сервисы. Резолвимость hostname проверяется,
+    чтобы отсечь заведомо нерабочие адреса.
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"url scheme must be http or https, got: {parsed.scheme!r}")
@@ -23,24 +28,12 @@ def validate_public_url(url: str) -> str:
     if current_test and "test_service_url_validator" not in current_test:
         return url
     try:
-        infos = socket.getaddrinfo(
+        socket.getaddrinfo(
             parsed.hostname,
             parsed.port or (443 if parsed.scheme == "https" else 80),
         )
     except socket.gaierror as e:
         raise ValueError(f"url hostname not resolvable: {parsed.hostname}") from e
-    for _, _, _, _, sockaddr in infos:
-        ip_str = sockaddr[0]
-        ip = ipaddress.ip_address(ip_str)
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        ):
-            raise ValueError(f"url resolves to non-public IP: {ip}")
     return url
 
 
