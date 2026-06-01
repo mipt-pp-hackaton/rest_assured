@@ -31,9 +31,16 @@ def test_scheduler_health_returns_runner_stats(override_auth, router_api):
     response = router_api.get("/api/health/scheduler")
     assert response.status_code == 200
     stats = response.json()
-    # Контракт: всегда возвращаются три счётчика
-    assert set(stats.keys()) == {"checks_total", "checks_failed", "active_workers_count"}
-    assert all(isinstance(v, int) and v >= 0 for v in stats.values())
+    # Контракт: три счётчика + отметка времени последнего цикла
+    assert set(stats.keys()) == {
+        "checks_total",
+        "checks_failed",
+        "active_workers_count",
+        "last_loop_at",
+    }
+    counters = {k: stats[k] for k in ("checks_total", "checks_failed", "active_workers_count")}
+    assert all(isinstance(v, int) and v >= 0 for v in counters.values())
+    assert stats["last_loop_at"] is None or isinstance(stats["last_loop_at"], str)
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +66,12 @@ async def test_scheduler_health_with_active_token_returns_200(router_api, seed_u
     response = router_api.get("/api/health/scheduler", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     stats = response.json()
-    assert set(stats.keys()) == {"checks_total", "checks_failed", "active_workers_count"}
+    assert set(stats.keys()) == {
+        "checks_total",
+        "checks_failed",
+        "active_workers_count",
+        "last_loop_at",
+    }
 
 
 @pytest.mark.asyncio

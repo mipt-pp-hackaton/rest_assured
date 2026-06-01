@@ -22,14 +22,24 @@ host = "mailhog"
 port = 1025
 user = ""
 password = ""
-use_tls = false
+use_tls = false            # implicit TLS / SMTPS (Yandex/Gmail: use_tls=true + port=465)
+# start_tls = false        # STARTTLS на 587; не задавать вместе с use_tls=true
+validate_certs = true      # проверка TLS-сертификата (false только для self-signed)
+timeout_seconds = 30
 from_email = "noreply@example.com"
 from_name = "Rest Assured Monitoring"
+
+# Пример продового SMTP (Yandex):
+#   host = "smtp.yandex.ru"; port = 465; use_tls = true; user/password = реальные
 
 [notifications]
 enabled = true
 reminder_cooldown_minutes = 30
 include_runbook_link = false
+
+[logging]
+json_logs = true           # структурированный JSON-лог по умолчанию (ELK/Loki/Datadog); false → человекочитаемый
+level = "INFO"
 
 # Generate a strong secret with: openssl rand -hex 32
 [jwt]

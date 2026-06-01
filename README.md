@@ -154,7 +154,7 @@ docker/                             # docker-compose.{test,prod}.yml
 
 ## 🌐 API — эндпоинты
 
-Базовый адрес по умолчанию — `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна на **`/docs`**, ReDoc — на **`/redoc`**, OpenAPI-схема — на **`/openapi.json`**.
+Базовый адрес по умолчанию — `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна на **`/docs`**, ReDoc — на **`/redoc`**, OpenAPI-схема — на **`/openapi.json`** (в рантайме) либо в виде статического файла `openapi.json` в корне репозитория (генерируется `make openapi`).
 
 > ℹ️ Глобального префикса (`/api/v1` и т.п.) нет — каждая группа роутеров несёт свой собственный префикс.
 
@@ -221,7 +221,19 @@ docker/                             # docker-compose.{test,prod}.yml
 | Метод | Путь | Доступ | Описание |
 |-------|------|:---:|----------|
 | `GET` | `/health` | 🔓 | Liveness-проверка приложения → `{ "status": "ok" }`. |
-| `GET` | `/api/health/scheduler` | 🔑 | Статистика планировщика (`checks_total`, `checks_failed`, `last_loop_at`, …). |
+| `GET` | `/api/health/scheduler` | 🔑 | Статистика планировщика (`checks_total`, `checks_failed`, `active_workers_count`, `last_loop_at`). |
+| `GET` | `/metrics` | 🔓 | Prometheus-экспозиция (см. ниже). Доступ ограничивается на сетевом уровне. |
+
+### 📊 Наблюдаемость (observability)
+
+«Мониторинг самого мониторинга»:
+
+- **Prometheus `/metrics`** — для Grafana/Alertmanager. Доменные метрики планировщика читаются прямо из живых счётчиков раннера (тот же источник, что и `/api/health/scheduler`):
+  - `rest_assured_checks_total`, `rest_assured_checks_failed_total` — счётчики проверок;
+  - `rest_assured_active_workers` — число активных per-service воркеров;
+  - `rest_assured_scheduler_last_loop_timestamp_seconds` — отметка последнего цикла (алерт «планировщик завис», если давно не растёт);
+  - `rest_assured_http_requests_total{method,status}`, `rest_assured_http_request_duration_seconds` — метрики HTTP API.
+- **Структурированное логирование (JSON)** — **включено по умолчанию**: loguru `serialize` + заворачивание stdlib-логов (планировщик, uvicorn) в единый JSON-поток для ELK/Loki/Datadog. Отключить (человекочитаемые логи для локальной отладки) — `DYNACONF_LOGGING__JSON_LOGS=false`. Защита от log-injection (`_sanitize_log`) и `diagnose=False` (секреты не попадают в traceback). Под pytest перехват не применяется, чтобы не ломать `caplog`.
 
 ---
 

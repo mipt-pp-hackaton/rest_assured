@@ -46,6 +46,7 @@ class SchedulerRunner:
             "checks_total": self.checks_total,
             "checks_failed": self.checks_failed,
             "active_workers_count": self.active_workers_count,
+            "last_loop_at": self.last_loop_at.isoformat() if self.last_loop_at else None,
         }
 
     def active_service_ids(self) -> set[int]:
