@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.13.0 (2026-06-01)
+
+### Chores
+
+- Update readme.md
+  ([`02b6326`](https://github.com/mipt-pp-hackaton/rest_assured/commit/02b63260412d1c8b564b9bdc5b1754a5624e49d5))
+
+### Features
+
+- Add stuct logging+monitoring
+  ([`beb1b41`](https://github.com/mipt-pp-hackaton/rest_assured/commit/beb1b41dd3289854f44036dca0b710b29fcdca8c))
+
+
 ## v1.12.9 (2026-05-31)
 
 ### Bug Fixes
