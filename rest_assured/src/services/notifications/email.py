@@ -55,11 +55,20 @@ class EmailSender:
             msg.set_content(text_body)
             msg.add_alternative(html_body, subtype="html")
 
-            async with SMTP(
-                hostname=self._cfg.host,
-                port=self._cfg.port,
-                use_tls=self._cfg.use_tls,
-            ) as smtp:
+            smtp_kwargs: dict = {
+                "hostname": self._cfg.host,
+                "port": self._cfg.port,
+                "use_tls": self._cfg.use_tls,
+                "validate_certs": self._cfg.validate_certs,
+                "timeout": self._cfg.timeout_seconds,
+            }
+            # start_tls передаём только при отсутствии implicit TLS — aiosmtplib
+            # запрещает одновременно use_tls=True и start_tls=True. None оставляем
+            # на усмотрение библиотеки (оппортунистический STARTTLS).
+            if not self._cfg.use_tls and self._cfg.start_tls is not None:
+                smtp_kwargs["start_tls"] = self._cfg.start_tls
+
+            async with SMTP(**smtp_kwargs) as smtp:
                 if self._cfg.user:
                     await smtp.login(self._cfg.user, self._cfg.password.get_secret_value())
                 await smtp.send_message(msg)

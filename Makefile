@@ -48,6 +48,10 @@ seed:
 	@echo "run seed script"
 	poetry run python3 -m rest_assured --seed
 
+openapi:
+	@echo "export OpenAPI schema to openapi.json"
+	poetry run python3 -m rest_assured.src.scripts.export_openapi openapi.json
+
 itest:
 	@echo "run integrational tests"
 	poetry run pytest rest_assured/integrational_tests --junitxml=integration-test-results.xml

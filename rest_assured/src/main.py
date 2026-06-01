@@ -11,7 +11,9 @@ from rest_assured.src.api.routers.metrics import router as metrics_router
 from rest_assured.src.api.routers.scheduler import router as scheduler_router
 from rest_assured.src.api.routers.services import router as services_router
 from rest_assured.src.configs.app.main import settings
+from rest_assured.src.logger import configure_logging
 from rest_assured.src.models.checks import CheckResult
+from rest_assured.src.observability import Observability
 from rest_assured.src.repositories.database_session import session_scope
 from rest_assured.src.services.incidents import IncidentsService
 from rest_assured.src.services.metrics_service import configure as configure_metrics_cache
@@ -23,6 +25,8 @@ from rest_assured.src.utils.version import get_app_version
 
 def create_app() -> FastAPI:
     """Фабрика FastAPI приложения."""
+    configure_logging(json_logs=settings.logging.json_logs, level=settings.logging.level)
+
     runner = SchedulerRunner()
     listener = ServiceChangeListener()
     listener.set_runner(runner)
@@ -67,6 +71,10 @@ def create_app() -> FastAPI:
     app.include_router(metrics_router)
     app.include_router(scheduler_router)
     app.include_router(services_router)
+
+    # Prometheus-экспозиция на /metrics (без auth — стандарт для scrape'а;
+    # ограничивать доступ принято на сетевом уровне).
+    Observability(runner).instrument(app)
 
     return app
 
